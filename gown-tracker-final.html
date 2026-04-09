@@ -3084,19 +3084,10 @@ td{padding:11px 14px;vertical-align:middle;}
 </div>
 
 <script type="module">
-// Import the functions you need from the SDKs you need
-
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-
-//import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBltfac-apGVD-PdfASqveMA_j77CoPhwg",
   authDomain: "female-undergraduate-students.firebaseapp.com",
@@ -3108,83 +3099,96 @@ const firebaseConfig = {
   measurementId: "G-7K1JMSM6FR"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const KEY = 'gownChecklist_v1';
-const load = (callback) => {
-  onValue(ref(db, KEY), (snapshot) => {
-    callback(snapshot.val() || {});
-  });
-};
+const db = getDatabase(app);
+const KEY = "gownChecklist_v1";
+
+let state = {};
 
 const save = (s) => {
   set(ref(db, KEY), s);
 };
 
-function toggle(id) {
-  const s = load();
-  const cb = document.getElementById('cb-'+id);
-  cb.checked ? s[id]=1 : delete s[id];
-  save(s);
-  document.getElementById('row-'+id).classList.toggle('done-row', cb.checked);
+function render(s) {
+  state = s || {};
+
+  document.querySelectorAll("#tableBody tr").forEach(tr => {
+    const id = +tr.dataset.id;
+    const cb = document.getElementById("cb-" + id);
+    const done = !!state[id];
+
+    if (cb) cb.checked = done;
+    tr.classList.toggle("done-row", done);
+  });
+
   updateStats();
+  applyFilters();
+}
+
+function toggle(id) {
+  const cb = document.getElementById("cb-" + id);
+
+  if (cb.checked) {
+    state[id] = 1;
+  } else {
+    delete state[id];
+  }
+
+  save(state);
 }
 
 function updateStats() {
-  const s = load();
   const total = 279;
-  const done = Object.keys(s).length;
+  const done = Object.keys(state).length;
   const left = total - done;
-  const pct = Math.round(done/total*100);
-  document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent  = done;
-  document.getElementById('cLeft').textContent  = left;
-  document.getElementById('cPct').textContent   = pct+'%';
-  document.getElementById('progChip').textContent = done+' / '+total;
-  document.getElementById('mainBar').style.width = pct+'%';
+  const pct = Math.round((done / total) * 100);
+
+  document.getElementById("cTotal").textContent = total;
+  document.getElementById("cDone").textContent = done;
+  document.getElementById("cLeft").textContent = left;
+  document.getElementById("cPct").textContent = pct + "%";
+  document.getElementById("progChip").textContent = done + " / " + total;
+  document.getElementById("mainBar").style.width = pct + "%";
 }
 
 function applyFilters() {
-  const q   = document.getElementById('searchInput').value.toLowerCase();
-  const col = document.getElementById('filterCollege').value;
-  const sz  = document.getElementById('filterSize').value;
-  const ct  = document.getElementById('filterCity').value;
-  const st  = document.getElementById('filterStatus').value;
-  const s   = load();
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const col = document.getElementById("filterCollege").value;
+  const sz = document.getElementById("filterSize").value;
+  const ct = document.getElementById("filterCity").value;
+  const st = document.getElementById("filterStatus").value;
+
   let visible = 0;
-  document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
-    const college = tr.querySelector('.td-college').textContent.trim();
-    const size    = tr.querySelector('.size-badge').textContent.trim();
-    const city    = tr.querySelector('.td-city').textContent.trim();
-    const done    = tr.classList.contains('done-row');
-    const show =
-      (!q   || name.includes(q)) &&
-      (!col || college.includes(col)) &&
-      (!sz  || size === sz) &&
-      (!ct  || city === ct) &&
-      (!st  || (st==='done'?done:!done));
-    tr.style.display = show ? '' : 'none';
-    if(show) visible++;
-  });
-  document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
-}
 
-function initState() {
-  const s = load();
-  document.querySelectorAll('#tableBody tr').forEach(tr => {
+  document.querySelectorAll("#tableBody tr").forEach(tr => {
+    const name = tr.querySelector(".td-name").textContent.toLowerCase();
+    const college = tr.querySelector(".td-college").textContent.trim();
+    const size = tr.querySelector(".size-badge").textContent.trim();
+    const city = tr.querySelector(".td-city").textContent.trim();
     const id = +tr.dataset.id;
-    if(s[id]) {
-      tr.classList.add('done-row');
-      const cb = document.getElementById('cb-'+id);
-      if(cb) cb.checked = true;
-    }
+    const done = !!state[id];
+
+    const show =
+      (!q || name.includes(q)) &&
+      (!col || college.includes(col)) &&
+      (!sz || size === sz) &&
+      (!ct || city === ct) &&
+      (!st || (st === "done" ? done : !done));
+
+    tr.style.display = show ? "" : "none";
+    if (show) visible++;
   });
-  updateStats();
+
+  document.getElementById("emptyState").style.display = visible === 0 ? "block" : "none";
 }
 
-initState();
+onValue(ref(db, KEY), (snapshot) => {
+  render(snapshot.val() || {});
+});
+
+window.toggle = toggle;
+window.applyFilters = applyFilters;
+</script>
 </script>
 </body>
 </html>
