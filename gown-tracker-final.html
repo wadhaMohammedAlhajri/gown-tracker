@@ -3083,7 +3083,7 @@ td{padding:11px 14px;vertical-align:middle;}
   </div>
 </div>
 
-<script type="module">
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
@@ -3095,8 +3095,7 @@ const firebaseConfig = {
   projectId: "female-undergraduate-students",
   storageBucket: "female-undergraduate-students.firebasestorage.app",
   messagingSenderId: "481168743771",
-  appId: "1:481168743771:web:b5d61105a9018f95d38e7e",
-  measurementId: "G-7K1JMSM6FR"
+  appId: "1:481168743771:web:b5d61105a9018f95d38e7e"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -3127,6 +3126,7 @@ function render(s) {
 
 function toggle(id) {
   const cb = document.getElementById("cb-" + id);
+  if (!cb) return;
 
   if (cb.checked) {
     state[id] = 1;
@@ -3179,7 +3179,8 @@ function applyFilters() {
     if (show) visible++;
   });
 
-  document.getElementById("emptyState").style.display = visible === 0 ? "block" : "none";
+  document.getElementById("emptyState").style.display =
+    visible === 0 ? "block" : "none";
 }
 
 onValue(ref(db, KEY), (snapshot) => {
@@ -3188,7 +3189,6 @@ onValue(ref(db, KEY), (snapshot) => {
 
 window.toggle = toggle;
 window.applyFilters = applyFilters;
-</script>
 </script>
 </body>
 </html>
