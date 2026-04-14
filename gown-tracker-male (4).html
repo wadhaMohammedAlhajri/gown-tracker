@@ -2,26 +2,76 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Gown توزيع</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gown Distribution</title>
+
 <style>
-body{font-family:sans-serif;padding:20px;background:#f5f7ff}
-table{width:100%;border-collapse:collapse;background:#fff}
-th,td{padding:10px;border:1px solid #ddd;text-align:left}
-th{background:#4f46e5;color:#fff}
-.done{text-decoration:line-through;opacity:.5}
+body{
+  font-family: Arial;
+  background:#f5f7ff;
+  margin:0;
+}
+
+.topbar{
+  background:#4f46e5;
+  color:#fff;
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.container{padding:20px}
+
+.stats{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.stat{
+  background:#fff;
+  padding:15px;
+  border-radius:10px;
+  flex:1;
+  text-align:center;
+}
+
+table{
+  width:100%;
+  background:#fff;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #eee;
+}
+
+th{
+  background:#eef2ff;
+}
+
+.done{
+  text-decoration:line-through;
+  opacity:.5;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🎓 Gown Distribution</h2>
+<div class="topbar">
+  <h3>🎓 Gown Distribution</h3>
+  <button onclick="loadData()">Refresh</button>
+</div>
 
-<button onclick="loadData()">🔄 Refresh</button>
+<div class="container">
 
-<p>
-Total: <span id="total">0</span> |
-Done: <span id="done">0</span>
-</p>
+<div class="stats">
+  <div class="stat">Total<br><b id="total">0</b></div>
+  <div class="stat">Done<br><b id="done">0</b></div>
+  <div class="stat">Left<br><b id="left">0</b></div>
+</div>
 
 <table>
 <thead>
@@ -39,27 +89,131 @@ Done: <span id="done">0</span>
 <tbody id="table"></tbody>
 </table>
 
+</div>
+
 <script>
-// 🔥 حط هنا SHEET ID
+// 🔥 حط هنا ID حق الشيت
 const SHEET_ID = "1SmG_IQhcHO-dUihNpmz9gWRg9uMN9fkOR-usxET7ajI";
 
 const SHEET_NAME = "Male UG Eastern region";
 
-const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
+const URL =
+`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 
-const KEY = "checklist";
+const KEY = "gownCheck";
 
 let students = [];
 
-function normalizeCity(c){ return c || ""; }
-
 function loadState(){
-  return JSON.parse(localStorage.getItem(KEY) || "{}");
+  return JSON.parse(localStorage.getItem(KEY)||"{}");
 }
 function saveState(s){
-  localStorage.setItem(KEY, JSON.stringify(s));
+  localStorage.setItem(KEY,JSON.stringify(s));
 }
 
 async function loadData(){
   try{
-   
+    const res = await fetch(URL);
+    const text = await res.text();
+
+    const json = JSON.parse(
+      text.match(/setResponse\(([\s\S]*)\)/)[1]
+    );
+
+    const cols = json.table.cols;
+    const rows = json.table.rows;
+
+    const map = {};
+    cols.forEach((c,i)=>{
+      if(c.label) map[c.label.toLowerCase()] = i;
+    });
+
+    const get = (row,name)=>{
+      const i = map[name.toLowerCase()];
+      return (i!=undefined && row.c[i] && row.c[i].v)
+        ? row.c[i].v
+        : '';
+    };
+
+    students = [];
+
+    rows.forEach((r,i)=>{
+      const name = get(r,"Student Name");
+      if(!name) return;
+
+      students.push({
+        id: get(r,"Sr. No") || i+1,
+        name,
+        size: get(r,"SIZE"),
+        college: get(r,"College"),
+        color: get(r,"COLOR"),
+        mobile: get(r,"Mobile Number"),
+        city: get(r,"City")
+      });
+    });
+
+    render();
+
+  }catch(e){
+    alert("Error loading data");
+    console.log(e);
+  }
+}
+
+function render(){
+  const state = loadState();
+
+  const table = document.getElementById("table");
+  table.innerHTML = "";
+
+  students.forEach((s,i)=>{
+    const done = state[s.id];
+
+    const tr = document.createElement("tr");
+    if(done) tr.classList.add("done");
+
+    tr.innerHTML = `
+    <td><input type="checkbox"
+      ${done?"checked":""}
+      onchange="toggle('${s.id}')"></td>
+    <td>${i+1}</td>
+    <td>${s.name}</td>
+    <td>${s.size}</td>
+    <td>${s.college}</td>
+    <td>${s.color}</td>
+    <td>${s.mobile}</td>
+    <td>${s.city}</td>
+    `;
+
+    table.appendChild(tr);
+  });
+
+  updateStats();
+}
+
+function toggle(id){
+  const s = loadState();
+
+  if(s[id]) delete s[id];
+  else s[id]=1;
+
+  saveState(s);
+  render();
+}
+
+function updateStats(){
+  const s = loadState();
+
+  const total = students.length;
+  const done = students.filter(st=>s[st.id]).length;
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("done").textContent = done;
+  document.getElementById("left").textContent = total-done;
+}
+
+loadData();
+</script>
+
+</body>
+</html>
