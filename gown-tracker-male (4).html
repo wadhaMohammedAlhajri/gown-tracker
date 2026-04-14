@@ -141,15 +141,16 @@ async function loadData(){
       const name = get(r,"Student Name");
       if(!name) return;
 
-      students.push({
-        id: get(r,"Sr. No") || i+1,
-        name,
-        size: get(r,"SIZE"),
-        college: get(r,"College"),
-        color: get(r,"COLOR"),
-        mobile: get(r,"Mobile Number"),
-        city: get(r,"City")
-      });
+    students.push({
+  id: r.c[0]?.v || i+1,
+  name: (r.c[1]?.v || '').toString().trim(),
+  size: (r.c[3]?.v || '').toString().trim(),
+  college: (r.c[4]?.v || '').toString().trim(),
+  color: (r.c[5]?.v || '').toString().trim().replace(/^./, c => c.toUpperCase()),
+  mobile: (r.c[6]?.v || '').toString().trim(),
+  city: (r.c[7]?.v || '').toString().trim(),
+  term: (r.c[8]?.v || '').toString().trim()
+});
     });
 
     render();
