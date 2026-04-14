@@ -263,17 +263,34 @@ function renderTable(){
 }
 
 function renderBreakdown(){
-  const countBy=key=>{const m={};ALL.forEach(s=>{const v=s[key]||'—';m[v]=(m[v]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
-  const panel=(id,entries)=>{
-    const max=entries[0]?.[1]||1;
-    document.getElementById(id).innerHTML=entries.map(([l,c])=>`
-      <div class="bk-row"><div style="flex:1"><div class="bk-label">${l}</div>
-      <div class="bk-bar"><div class="bk-bar-fill" style="width:${Math.round(c/max*100)}%"></div></div></div>
-      <div class="bk-count">${c}</div></div>`).join('');
+  const s = ld();
+  const countBy = key => {
+    const m = {};
+    ALL.forEach(st => {
+      const v = st[key]||'—';
+      if(!m[v]) m[v] = {total:0, handed:0};
+      m[v].total++;
+      if(s[st.id]) m[v].handed++;
+    });
+    return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
   };
-  panel('bkSize',countBy('size'));
-  panel('bkCollege',countBy('college'));
-  panel('bkCity',countBy('city'));
+  const panel = (id, entries) => {
+    const max = entries[0]?.[1].total || 1;
+    document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => `
+      <div class="bk-row">
+        <div style="flex:1">
+          <div class="bk-label">${l}</div>
+          <div class="bk-bar"><div class="bk-bar-fill" style="width:${Math.round(handed/total*100)}%"></div></div>
+        </div>
+        <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700">
+          <span style="color:#059669">${handed}</span>
+          <span style="color:var(--muted)"> / ${total}</span>
+        </div>
+      </div>`).join('');
+  };
+  panel('bkSize',    countBy('size'));
+  panel('bkCollege', countBy('college'));
+  panel('bkCity',    countBy('city'));
 }
 
 function toggle(id){
@@ -282,6 +299,7 @@ function toggle(id){
   document.getElementById('row-'+id).classList.toggle('done-row',cb.checked);
   cb.nextElementSibling.textContent=cb.checked?'✓':'';
   updateStats();
+  renderBreakdown();
 }
 
 function updateStats(){
