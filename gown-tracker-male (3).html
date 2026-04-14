@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gown Distribution — Male Undergraduates</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4ff;--white:#fff;--border:#e4e9ff;--text:#1a1f4b;--muted:#64748b;
+  --indigo:#4f46e5;--cyan:#0891b2;--green:#059669;--red:#dc2626;
+  --s1:0 2px 16px rgba(79,70,229,.08);--s2:0 8px 32px rgba(79,70,229,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+  background-image:radial-gradient(circle at 10% 5%,rgba(79,70,229,.07) 0%,transparent 45%),radial-gradient(circle at 90% 90%,rgba(6,182,212,.06) 0%,transparent 45%);}
+
+/* TOPBAR */
+.topbar{background:var(--white);border-bottom:1.5px solid var(--border);padding:18px 28px;
+  display:flex;align-items:center;gap:16px;box-shadow:var(--s1);position:sticky;top:0;z-index:100;}
+.logo{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-size:1.3rem;
+  width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.topbar-titles{flex:1;}
+.topbar-titles h1{font-size:1.15rem;font-weight:800;}
+.topbar-titles p{font-size:.78rem;color:var(--muted);margin-top:1px;}
+.reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;
+  color:var(--indigo);cursor:pointer;transition:all .2s;}
+.reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
+
+/* LOADING */
+.loading{text-align:center;padding:80px 20px;color:var(--muted);}
+.spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MAIN STATS */
+.stats{display:flex;gap:14px;flex-wrap:wrap;padding:24px 28px 0;}
+.stat{background:var(--white);border-radius:16px;border:1.5px solid var(--border);
+  padding:16px 20px;flex:1;min-width:120px;max-width:200px;box-shadow:var(--s1);
+  text-align:center;transition:transform .2s,box-shadow .2s;}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--s2);}
+.stat-num{font-size:2rem;font-weight:900;line-height:1;}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.s-total .stat-num{color:#4f46e5;}.s-done .stat-num{color:#059669;}
+.s-left .stat-num{color:#dc2626;}.s-pct .stat-num{color:#d97706;}
+
+/* PROGRESS BAR */
+.prog-wrap{margin:18px 28px 0;background:var(--white);border-radius:16px;
+  padding:16px 20px;border:1.5px solid var(--border);box-shadow:var(--s1);}
+.prog-head{display:flex;justify-content:space-between;margin-bottom:10px;}
+.prog-head span{font-size:.82rem;font-weight:700;color:var(--muted);}
+.prog-head .chip{background:linear-gradient(135deg,#4f46e5,#06b6d4);
+  color:#fff;padding:2px 12px;border-radius:999px;font-weight:800;}
+.bar-bg{background:#e8ebff;border-radius:999px;height:12px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:999px;width:0%;
+  background:linear-gradient(90deg,#4f46e5,#06b6d4);transition:width .5s cubic-bezier(.4,0,.2,1);}
+
+/* BREAKDOWN */
+.breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 28px 0;}
+@media(max-width:768px){.breakdown{grid-template-columns:1fr;}}
+.bk-panel{background:var(--white);border-radius:16px;border:1.5px solid var(--border);padding:16px 18px;box-shadow:var(--s1);}
+.bk-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.bk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4ff;}
+.bk-row:last-child{border-bottom:none;}
+.bk-label{font-size:.82rem;font-weight:600;color:var(--text);}
+.bk-count{font-size:.82rem;font-weight:800;color:var(--indigo);}
+.bk-bar{height:4px;border-radius:999px;background:#e8ebff;margin-top:4px;}
+.bk-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#06b6d4);}
+
+/* LEGEND */
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.73rem;font-weight:700;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;align-items:center;}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px;}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;border:1.5px solid var(--border);
+  border-radius:10px;background:var(--white);font-family:inherit;font-size:.85rem;
+  color:var(--text);outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--muted);}
+select{padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--white);font-family:inherit;font-size:.82rem;color:var(--text);outline:none;cursor:pointer;}
+select:focus{border-color:#4f46e5;}
+.filter-label{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+
+/* TABLE */
+.table-wrap{margin:18px 28px 40px;background:var(--white);border-radius:20px;
+  border:1.5px solid var(--border);box-shadow:var(--s1);overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:.84rem;}
+thead th{background:#f8f9ff;padding:12px 14px;text-align:left;font-weight:800;
+  font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1.5px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid #f0f4ff;transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#fafbff;}
+tbody tr.done-row{opacity:.45;}
+tbody tr.done-row td.td-name{text-decoration:line-through;color:var(--muted);}
+td{padding:11px 14px;vertical-align:middle;}
+.td-check{width:40px;}.td-num{color:var(--muted);font-size:.75rem;width:36px;text-align:center;font-weight:700;}
+.td-name{font-weight:700;white-space:nowrap;}
+.td-college{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.td-city{font-family:'Tajawal',sans-serif;font-size:.85rem;}
+.td-mobile{font-size:.78rem;color:var(--muted);font-family:monospace;direction:ltr;}
+
+/* CHECKBOX */
+.chk{position:relative;display:inline-flex;cursor:pointer;}
+.chk input{position:absolute;opacity:0;width:0;height:0;}
+.box{width:22px;height:22px;border:2px solid #c7d2fe;border-radius:7px;background:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+  color:transparent;font-weight:900;transition:all .2s;}
+.chk input:checked+.box{background:linear-gradient(135deg,#4f46e5,#06b6d4);
+  border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3);}
+
+/* BADGES */
+.size-badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:800;}
+.size-small{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+.size-medium{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.size-large{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff;}
+.size-num{background:#f0f4ff;color:#4f46e5;border:1px solid #c7d2fe;}
+.college-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.color-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:800;}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty .icon{font-size:3rem;margin-bottom:12px;}
+
+@media(max-width:768px){
+  .topbar,.stats,.filters,.legend,.prog-wrap,.breakdown,.table-wrap{padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}
+  .stats{padding:14px 14px 0;}
+  .td-college,.td-mobile,.td-city{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🎓</div>
+  <div class="topbar-titles">
+    <h1>Male Undergraduate Students — Gown Distribution</h1>
+    <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
+  </div>
+  <button class="reload-btn" onclick="loadFromSheets()">🔄 Refresh Data</button>
+</div>
+
+<div id="loadingState" class="loading">
+  <div class="spinner"></div>
+  <p>Loading students from Google Sheets...</p>
+</div>
+
+<div id="mainContent" style="display:none">
+
+<div class="stats">
+  <div class="stat s-total"><div class="stat-num" id="cTotal">0</div><div class="stat-lbl">Total Students</div></div>
+  <div class="stat s-done"><div class="stat-num" id="cDone">0</div><div class="stat-lbl">Handed ✅</div></div>
+  <div class="stat s-left"><div class="stat-num" id="cLeft">0</div><div class="stat-lbl">Remaining ⏳</div></div>
+  <div class="stat s-pct"><div class="stat-num" id="cPct">0%</div><div class="stat-lbl">Progress 🔥</div></div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-head">
+    <span>Overall Progress</span>
+    <span class="chip" id="progChip">0 / 0</span>
+  </div>
+  <div class="bar-bg"><div class="bar-fill" id="mainBar"></div></div>
+</div>
+
+<div class="breakdown">
+  <div class="bk-panel"><div class="bk-title">📏 By Size</div><div id="bkSize"></div></div>
+  <div class="bk-panel"><div class="bk-title">🏫 By College</div><div id="bkCollege"></div></div>
+  <div class="bk-panel"><div class="bk-title">🏙️ By City</div><div id="bkCity"></div></div>
+</div>
+
+<div class="legend" style="margin-top:14px;">
+  <span style="font-size:.73rem;font-weight:800;color:var(--muted);margin-left:4px;">College Colors:</span>
+  <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>Chemicals & Materials — Yellow</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#6b7280"></div>Computing & Mathematics — Gray</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#ea580c"></div>Engineering & Physics — Orange</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>Petroleum & Geo Sciences — Red</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>Business School — Blue</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#92400e"></div>Design & Built Env. — Brown</div>
+</div>
+
+<div class="filters">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" placeholder="Search by name..." oninput="applyFilters()" id="searchInput">
+  </div>
+  <span class="filter-label">College:</span>
+  <select onchange="applyFilters()" id="filterCollege">
+    <option value="">All Colleges</option>
+    <option>Chemicals and Materials</option>
+    <option>Computing & Mathematics</option>
+    <option>Design & Built Environment</option>
+    <option>Engineering & Physics</option>
+    <option>KFUPM Business School</option>
+    <option>Petroleum Engg. & Geo Sciences</option>
+  </select>
+  <span class="filter-label">Size:</span>
+  <select onchange="applyFilters()" id="filterSize">
+    <option value="">All Sizes</option>
+    <option>27"</option>
+    <option>28"</option>
+    <option>29"</option>
+    <option>30"</option>
+    <option>31"</option>
+    <option>32"</option>
+    <option>33"</option>
+    <option>34"</option>
+  </select>
+  <span class="filter-label">Color:</span>
+  <select onchange="applyFilters()" id="filterColor">
+    <option value="">All Colors</option>
+    <option>Blue</option>
+    <option>Brown</option>
+    <option>Gray</option>
+    <option>Orange</option>
+    <option>Red</option>
+    <option>Yellow</option>
+  </select>
+  <span class="filter-label">City:</span>
+  <select onchange="applyFilters()" id="filterCity">
+    <option value="">All Cities</option>
+    <option>KFUPM</option>
+    <option>الاحساء</option>
+    <option>الجبيل</option>
+    <option>الخبر</option>
+    <option>الدمام</option>
+    <option>الظهران</option>
+    <option>القطيف</option>
+    <option>بقيق</option>
+    <option>رأس تنورة</option>
+    <option>سيهات</option>
+  </select>
+  <span class="filter-label">Term:</span>
+  <select onchange="applyFilters()" id="filterTerm">
+    <option value="">All Terms</option>
+    <option>202510</option>
+    <option>202520</option>
+    <option>202530</option>
+  </select>
+  <select onchange="applyFilters()" id="filterStatus">
+    <option value="">All</option>
+    <option value="pending">Pending only</option>
+    <option value="done">Handed only</option>
+  </select>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>#</th>
+        <th>Student Name</th>
+        <th>Size</th>
+        <th>College</th>
+        <th>Color</th>
+        <th>Mobile</th>
+        <th>City</th>
+        <th>Room</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="icon">🔍</div>
+    <p>No students match your filter.</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  ⬇️  PASTE YOUR SHEET ID HERE
+// ─────────────────────────────────────────────
+    const SHEET_ID = '1SmG_IQhcHO-dUihNpmz9gWRg9uMN9fkOR-usxET7ajI';
+// ─────────────────────────────────────────────
+
+const SHEET_NAME = 'Male Undergraduate Students';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1&range=A4:M2000`;
+
+const KEY = 'gownMaleChecklist_v1';
+let ALL_STUDENTS = [];
+
+const load = () => { try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch{ return{}; } };
+const save = s => localStorage.setItem(KEY, JSON.stringify(s));
+
+const COLOR_STYLE = {
+  Yellow:['#fef3c7','#d97706'], Gray:['#f3f4f6','#6b7280'],
+  Orange:['#fff7ed','#ea580c'], Red:['#fef2f2','#dc2626'],
+  Blue:['#eff6ff','#2563eb'],  Brown:['#fdf6ec','#92400e'],
+};
+
+async function loadFromSheets() {
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('mainContent').style.display = 'none';
+  try {
+    const res  = await fetch(SHEET_URL);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows = json.table.rows;
+    const cols = json.table.cols;
+
+    const colMap = {};
+    cols.forEach((c,i) => { if(c.label) colMap[c.label.trim().toLowerCase()] = i; });
+
+    const get = (row, ...names) => {
+      for(const n of names){
+        const i = colMap[n.toLowerCase()];
+        if(i !== undefined && row.c[i] && row.c[i].v !== null) return String(row.c[i].v).trim();
+      }
+      return '';
+    };
+
+    ALL_STUDENTS = [];
+    rows.forEach((row, idx) => {
+      const name = get(row, 'Student Name');
+      if(!name || name === 'Student Name') return;
+      ALL_STUDENTS.push({
+        idx: idx+1,
+        id:  get(row,'Sr. No','Sr.No') || (idx+1),
+        name,
+        size:    get(row,'SIZE','Gown Size','size'),
+        college: get(row,'College','COLLEGE'),
+        color:   get(row,'COLOR','Color','color'),
+        mobile:  get(row,'Mobile Number','Mobile','mobile number'),
+        city:    normalizeCity(get(row,'City','CITY')),
+        term:    get(row,'TERM','Term'),
+        room:    get(row,'ROOM','Room'),
+      });
+    });
+
+    ALL_STUDENTS.sort((a,b) => a.name.localeCompare(b.name));
+    ALL_STUDENTS.forEach((s,i) => s.idx = i+1);
+
+    renderTable(ALL_STUDENTS);
+    renderBreakdown(ALL_STUDENTS);
+    updateStats();
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML =
+      `<div style="color:#dc2626;font-weight:700;font-size:1rem;">
+        ❌ Failed to load data.<br>
+        <span style="font-size:.82rem;font-weight:400;color:#64748b;margin-top:8px;display:block">
+          Make sure the Sheet ID is correct and sharing is set to "Anyone with the link"
+        </span>
+      </div>`;
+  }
+}
+
+function renderTable(students) {
+  const s = load();
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  students.forEach(st => {
+    const done = !!s[st.id];
+    const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
+    const tr = document.createElement('tr');
+    tr.id = 'row-'+st.id;
+    tr.dataset.id = st.id;
+    tr.dataset.term = st.term;
+    if(done) tr.classList.add('done-row');
+    tr.innerHTML = `
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done?'checked':''}><span class="box">${done?'✓':''}</span></label></td>
+      <td class="td-num">${st.idx}</td>
+      <td class="td-name">${st.name}</td>
+      <td><span class="size-badge size-num">${st.size}</span></td>
+      <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
+      <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
+      <td class="td-mobile">${st.mobile}</td>
+      <td class="td-city">${st.city}</td>
+      <td class="td-room">${st.room||'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBreakdown(students) {
+  const countBy = key => {
+    const map = {};
+    students.forEach(s => { const v=s[key]||'—'; map[v]=(map[v]||0)+1; });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  };
+  const renderPanel = (id, entries) => {
+    const max = entries[0]?.[1]||1;
+    document.getElementById(id).innerHTML = entries.map(([label,count]) => `
+      <div class="bk-row">
+        <div>
+          <div class="bk-label">${label}</div>
+          <div class="bk-bar"><div class="bk-bar-fill" style="width:${Math.round(count/max*100)}%"></div></div>
+        </div>
+        <div class="bk-count">${count}</div>
+      </div>`).join('');
+  };
+  renderPanel('bkSize',    countBy('size'));
+  renderPanel('bkCollege', countBy('college').map(([k,v])=>[k.replace('College of ',''),v]));
+  renderPanel('bkCity',    countBy('city'));
+}
+
+function toggle(id) {
+  const s = load();
+  const cb = document.getElementById('cb-'+id);
+  cb.checked ? s[id]=1 : delete s[id];
+  save(s);
+  document.getElementById('row-'+id).classList.toggle('done-row', cb.checked);
+  cb.nextElementSibling.textContent = cb.checked ? '✓' : '';
+  updateStats();
+}
+
+function updateStats() {
+  const s = load();
+  const total = ALL_STUDENTS.length;
+  const done  = ALL_STUDENTS.filter(st=>s[st.id]).length;
+  const left  = total-done;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  document.getElementById('cTotal').textContent = total;
+  document.getElementById('cDone').textContent  = done;
+  document.getElementById('cLeft').textContent  = left;
+  document.getElementById('cPct').textContent   = pct+'%';
+  document.getElementById('progChip').textContent = done+' / '+total;
+  document.getElementById('mainBar').style.width  = pct+'%';
+}
+
+function applyFilters() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const col = document.getElementById('filterCollege').value;
+  const sz  = document.getElementById('filterSize').value;
+  const clr = document.getElementById('filterColor').value;
+  const ct  = document.getElementById('filterCity').value;
+  const trm = document.getElementById('filterTerm').value;
+  const st  = document.getElementById('filterStatus').value;
+  let visible = 0;
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
+    const college = tr.querySelector('.td-college').textContent.trim();
+    const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
+    const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
+    const city    = tr.querySelector('.td-city').textContent.trim();
+    const term    = tr.dataset.term||'';
+    const done    = tr.classList.contains('done-row');
+    const show =
+      (!q   || name.includes(q)) &&
+      (!col || college.includes(col)) &&
+      (!sz  || size === sz) &&
+      (!clr || color === clr) &&
+      (!ct  || city === ct) &&
+      (!trm || term === trm) &&
+      (!st  || (st==='done'?done:!done));
+    tr.style.display = show ? '' : 'none';
+    if(show) visible++;
+  });
+  document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
+}
+
+loadFromSheets();
+</script>
+</body>
+</html>
