@@ -128,12 +128,15 @@ async function loadData(){
       if(c.label) map[c.label.toLowerCase()] = i;
     });
 
-    const get = (row,name)=>{
-      const i = map[name.toLowerCase()];
-      return (i!=undefined && row.c[i] && row.c[i].v)
-        ? row.c[i].v
-        : '';
-    };
+   students.push({
+  id: r.c[0]?.v || i+1,
+  name: r.c[1]?.v || '',
+  size: r.c[3]?.v || '',
+  college: r.c[4]?.v || '',
+  color: r.c[5]?.v || '',
+  mobile: r.c[6]?.v || '',
+  city: r.c[7]?.v || ''
+});
 
     students = [];
 
