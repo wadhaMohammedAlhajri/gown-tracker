@@ -168,7 +168,7 @@ td{padding:11px 14px;vertical-align:middle;}
 <div class="table-wrap">
   <table>
     <thead><tr>
-      <th></th><th>#</th><th>Student Name</th><th>Size</th>
+      <th></th><th>Student Name</th><th>Size</th>
       <th>College</th><th>Color</th><th>City</th><th>Room</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
@@ -265,7 +265,6 @@ function renderTable(){
     if(done) tr.classList.add('done-row');
     tr.innerHTML=`
       <td class="td-check"><label class="chk"><input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done?'checked':''}><span class="box">${done?'✓':''}</span></label></td>
-      <td class="td-num">${st.idx}</td>
       <td class="td-name">${st.name}</td>
       <td><span class="size-badge">${st.size}</span></td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
@@ -346,12 +345,7 @@ function applyFilters(){
     if(show) visible++;
   });
   document.getElementById('emptyState').style.display=visible===0?'block':'none';
-  // Dynamic row numbering
-  let n=1;
-  document.querySelectorAll('#tableBody tr').forEach(tr=>{
-    const numEl=tr.querySelector('.td-num');
-    if(numEl) numEl.textContent = tr.style.display==='' ? n++ : '';
-  });
+
   // Counter
   const isFiltered = q||col||sz||clr||ct||st;
   const counter = document.getElementById('filterCounter');
