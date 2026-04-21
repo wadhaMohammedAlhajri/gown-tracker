@@ -179,7 +179,24 @@ td{padding:11px 14px;vertical-align:middle;}
 </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBltfac-apGVD-PdfASqveMA_j77CoPhwg",
+  authDomain: "female-undergraduate-students.firebaseapp.com",
+  databaseURL: "https://female-undergraduate-students-default-rtdb.firebaseio.com",
+  projectId: "female-undergraduate-students",
+  storageBucket: "female-undergraduate-students.firebasestorage.app",
+  messagingSenderId: "481168743771",
+  appId: "1:481168743771:web:b5d61105a9018f95d38e7e",
+  measurementId: "G-7K1JMSM6FR"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+  
 const SHEET_ID   = '1tsH7eGamc0Bf1PKhFkD5N4vX4CYiW5DYf2vk1Obu7y4';
 const SHEET_NAME = 'KFUPM Male UG';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
