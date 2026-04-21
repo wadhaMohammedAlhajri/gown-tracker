@@ -35,7 +35,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .bk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4ff;}
 .bk-row:last-child{border-bottom:none;}
 .bk-label{font-size:.82rem;font-weight:600;color:var(--text);flex:1;}
-.bk-count{font-size:.82rem;font-weight:800;color:var(--indigo);margin-right:6px;}
 .bk-bar{height:4px;border-radius:999px;background:#e8ebff;margin-top:4px;}
 .bk-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#06b6d4);}
 .legend{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;}
@@ -49,6 +48,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 select{padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.82rem;color:var(--text);outline:none;cursor:pointer;}
 select:focus{border-color:#4f46e5;}
 .filter-label{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.filter-counter{padding:8px 28px;display:none;align-items:center;gap:10px;}
+.filter-counter .chip2{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;padding:5px 16px;border-radius:999px;font-size:.8rem;font-weight:700;}
+.filter-counter .clear-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:999px;background:#fff;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;}
+.filter-counter .clear-btn:hover{background:#eff6ff;border-color:#4f46e5;color:#4f46e5;}
 .table-wrap{margin:18px 28px 40px;background:var(--white);border-radius:20px;border:1.5px solid var(--border);box-shadow:var(--s1);overflow:hidden;}
 table{width:100%;border-collapse:collapse;font-size:.84rem;}
 thead th{background:#f8f9ff;padding:12px 14px;text-align:left;font-weight:800;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
@@ -58,7 +61,7 @@ tbody tr:hover{background:#fafbff;}
 tbody tr.done-row{opacity:.45;}
 tbody tr.done-row td.td-name{text-decoration:line-through;color:var(--muted);}
 td{padding:11px 14px;vertical-align:middle;}
-.td-check{width:40px;}.td-num{color:var(--muted);font-size:.75rem;width:36px;text-align:center;font-weight:700;}
+.td-check{width:40px;}
 .td-name{font-weight:700;white-space:nowrap;}
 .td-college{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap;}
 .td-city{font-family:'Tajawal',sans-serif;font-size:.85rem;}
@@ -71,7 +74,7 @@ td{padding:11px 14px;vertical-align:middle;}
 .college-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .color-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:800;}
 .empty{text-align:center;padding:60px 20px;color:var(--muted);}
-@media(max-width:768px){.topbar,.stats,.filters,.legend,.prog-wrap,.breakdown,.table-wrap{padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}.stats{padding:14px 14px 0;}.td-college,.td-mobile,.td-city{display:none;}}
+@media(max-width:768px){.topbar,.stats,.filters,.legend,.prog-wrap,.breakdown,.table-wrap,.filter-counter{padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}.stats{padding:14px 14px 0;}.td-college,.td-mobile,.td-city{display:none;}}
 </style>
 </head>
 <body>
@@ -155,16 +158,9 @@ td{padding:11px 14px;vertical-align:middle;}
   </select>
 </div>
 
-<div id="filterCounter" style="display:none;padding:8px 28px;">
-  <span style="background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;
-    padding:5px 16px;border-radius:999px;font-size:.8rem;font-weight:700;">
-    🔍 Showing <span id="counterNum">0</span> students
-  </span>
-  <button onclick="clearFilters()" style="margin-right:8px;padding:5px 14px;
-    border:1.5px solid #e4e9ff;border-radius:999px;background:#fff;
-    font-size:.78rem;font-weight:700;color:#64748b;cursor:pointer;">
-    ✕ Clear filters
-  </button>
+<div class="filter-counter" id="filterCounter">
+  <span class="chip2">🔍 Showing <span id="counterNum">0</span> students</span>
+  <button class="clear-btn" onclick="clearFilters()">✕ Clear filters</button>
 </div>
 
 <div class="table-wrap">
@@ -180,106 +176,95 @@ td{padding:11px 14px;vertical-align:middle;}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
+// ─────────────────────────────────────────────
+// ⬇️ Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBltfac-apGVD-PdfASqveMA_j77CoPhwg",
+  authDomain: "female-undergraduate-students.firebaseapp.com",
+  databaseURL: "https://female-undergraduate-students-default-rtdb.firebaseio.com",
+  projectId: "female-undergraduate-students",
+  storageBucket: "female-undergraduate-students.firebasestorage.app",
+  messagingSenderId: "481168743771",
+  appId: "1:481168743771:web:b5d61105a9018f95d38e7e"
 };
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
+// ⬇️ Sheet config
 const SHEET_ID   = '1tsH7eGamc0Bf1PKhFkD5N4vX4CYiW5DYf2vk1Obu7y4';
 const SHEET_NAME = 'KFUPM Male UG';
-const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
+// ─────────────────────────────────────────────
 
-const KEY = 'gownMaleChecklist_v1';
-const checklistRef = ref(db, KEY);
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
+const DB_KEY = 'gownMaleChecklist_v1';
 
-let ALL = [];
+let ALL   = [];
 let state = {};
 
 const COLOR_STYLE = {
-  Yellow:['#fef3c7','#d97706'],
-  Gray:['#f3f4f6','#6b7280'],
-  Orange:['#fff7ed','#ea580c'],
-  Red:['#fef2f2','#dc2626'],
-  Blue:['#eff6ff','#2563eb'],
-  Brown:['#fdf6ec','#92400e'],
+  Yellow:['#fef3c7','#d97706'], Gray:['#f3f4f6','#6b7280'],
+  Orange:['#fff7ed','#ea580c'], Red:['#fef2f2','#dc2626'],
+  Blue:['#eff6ff','#2563eb'],   Brown:['#fdf6ec','#92400e'],
 };
 
-const save = (s) => set(checklistRef, s);
+const save = s => set(ref(db, DB_KEY), s || {});
 
 const fixCity = c => {
-  if (!c) return '';
+  if(!c) return '';
   c = c.trim();
-  if (c === 'رأس تنورة' || c === 'راس تنورة') return 'رأس تنورة';
-  if (c === 'الأحساء' || c === 'الاحساء') return 'الاحساء';
+  if(c==='رأس تنورة'||c==='راس تنورة') return 'رأس تنورة';
+  if(c==='الأحساء'||c==='الاحساء')     return 'الاحساء';
   return c;
 };
 
 async function loadData() {
-  document.getElementById('loadingState').style.display = 'block';
-  document.getElementById('mainContent').style.display = 'none';
-
+  document.getElementById('loadingState').style.display='block';
+  document.getElementById('mainContent').style.display='none';
   try {
-    const res = await fetch(SHEET_URL);
+    const res  = await fetch(SHEET_URL);
     const text = await res.text();
     const json = JSON.parse(text.match(/setResponse\(([\s\S]*)\)/)[1]);
     const rows = json.table.rows;
     const cols = json.table.cols;
 
     const map = {};
-    cols.forEach((c, i) => {
-      if (c.label) map[c.label.toLowerCase().trim()] = i;
-    });
-
-    const gv = (r, name) => {
+    cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
+    const gv = (r,name) => {
       const i = map[name.toLowerCase()];
-      return (i != null && r.c[i] && r.c[i].v != null) ? String(r.c[i].v).trim() : '';
+      return (i!=null && r.c[i] && r.c[i].v!=null) ? String(r.c[i].v).trim() : '';
     };
 
     ALL = [];
-    rows.forEach((r, i) => {
-      const name = gv(r, 'student name');
-      if (!name) return;
-
+    rows.forEach((r,i)=>{
+      const name = gv(r,'student name');
+      if(!name) return;
       ALL.push({
-        idx: i + 1,
-        id: gv(r, 'sr. no') || gv(r, 'sr.no') || String(i + 1),
+        idx:  i+1,
+        id:   gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
+        srno: gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
         name,
-        srno: gv(r, 'sr. no') || gv(r, 'sr.no') || String(i + 1),
-        size: gv(r, 'size'),
-        college: gv(r, 'college'),
-        color: gv(r, 'color'),
-        mobile: gv(r, 'mobile number'),
-        city: fixCity(gv(r, 'city')),
-        term: gv(r, 'term'),
+        size:    gv(r,'size'),
+        college: gv(r,'college'),
+        color:   gv(r,'color'),
+        mobile:  gv(r,'mobile number'),
+        city:    fixCity(gv(r,'city')),
+        term:    gv(r,'term'),
       });
     });
 
-    ALL.sort((a, b) => a.name.localeCompare(b.name));
-    ALL.forEach((s, i) => s.idx = i + 1);
+    ALL.sort((a,b)=>a.name.localeCompare(b.name));
+    ALL.forEach((s,i)=>s.idx=i+1);
 
-    renderTable();
-    renderBreakdown();
-    updateStats();
+    renderTable(); renderBreakdown(); updateStats();
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('mainContent').style.display='block';
 
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-  } catch (e) {
-    document.getElementById('loadingState').innerHTML = `
-      <div style="color:#dc2626;font-weight:700;font-size:1rem;">
-        ❌ Failed to load data.<br>
-        <span style="font-size:.82rem;color:#64748b">${e.message}</span>
-      </div>`;
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML=
+      `<div style="color:#dc2626;font-weight:700;font-size:1rem;">❌ Failed to load data.<br>
+       <span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
     console.error(e);
   }
 }
@@ -287,25 +272,14 @@ async function loadData() {
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
-
   ALL.forEach(st => {
     const done = !!state[st.id];
-    const [bg, fg] = COLOR_STYLE[st.color] || ['#f9fafb', '#374151'];
-
+    const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
     const tr = document.createElement('tr');
-    tr.id = 'row-' + st.id;
-    tr.dataset.id = st.id;
-    tr.dataset.term = st.term;
-
-    if (done) tr.classList.add('done-row');
-
+    tr.id = 'row-'+st.id; tr.dataset.id = st.id; tr.dataset.term = st.term||'';
+    if(done) tr.classList.add('done-row');
     tr.innerHTML = `
-      <td class="td-check">
-        <label class="chk">
-          <input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done ? 'checked' : ''}>
-          <span class="box">${done ? '✓' : ''}</span>
-        </label>
-      </td>
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done?'checked':''}><span class="box">${done?'✓':''}</span></label></td>
       <td style="font-size:.75rem;color:var(--muted);font-weight:700;white-space:nowrap">${st.srno}</td>
       <td class="td-name">${st.name}</td>
       <td><span class="size-badge">${st.size}</span></td>
@@ -313,154 +287,130 @@ function renderTable() {
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
       <td class="td-mobile">${st.mobile}</td>
       <td class="td-city">${st.city}</td>
-      <td style="font-size:.75rem;color:var(--muted)">${st.term}</td>
-    `;
+      <td style="font-size:.75rem;color:var(--muted)">${st.term}</td>`;
     tbody.appendChild(tr);
   });
+  applyFilters();
 }
 
 function renderBreakdown() {
   const countBy = key => {
     const m = {};
     ALL.forEach(st => {
-      const v = st[key] || '—';
-      if (!m[v]) m[v] = { total: 0, handed: 0 };
+      const v = st[key]||'—';
+      if(!m[v]) m[v] = {total:0, handed:0};
       m[v].total++;
-      if (state[st.id]) m[v].handed++;
+      if(state[st.id]) m[v].handed++;
     });
-    return Object.entries(m).sort((a, b) => b[1].total - a[1].total);
+    return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
   };
-
   const panel = (id, entries) => {
-    document.getElementById(id).innerHTML = entries.map(([l, { total, handed }]) => `
+    document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => `
       <div class="bk-row">
         <div style="flex:1">
           <div class="bk-label">${l}</div>
-          <div class="bk-bar">
-            <div class="bk-bar-fill" style="width:${Math.round((handed / total) * 100)}%"></div>
-          </div>
+          <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div>
         </div>
         <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700">
           <span style="color:#059669">${handed}</span>
           <span style="color:var(--muted)"> / ${total}</span>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   };
-
-  panel('bkSize', countBy('size'));
+  panel('bkSize',    countBy('size'));
   panel('bkCollege', countBy('college'));
-  panel('bkCity', countBy('city'));
-}
-
-function toggle(id) {
-  const cb = document.getElementById('cb-' + id);
-
-  if (cb.checked) {
-    state[id] = 1;
-  } else {
-    delete state[id];
-  }
-
-  save(state);
+  panel('bkCity',    countBy('city'));
 }
 
 function updateStats() {
   const total = ALL.length;
-  const done = ALL.filter(st => state[st.id]).length;
-  const left = total - done;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-
+  const done  = ALL.filter(st=>state[st.id]).length;
+  const left  = total-done;
+  const pct   = total ? Math.round(done/total*100) : 0;
   document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent = done;
-  document.getElementById('cLeft').textContent = left;
-  document.getElementById('cPct').textContent = pct + '%';
-  document.getElementById('progChip').textContent = done + ' / ' + total;
-  document.getElementById('mainBar').style.width = pct + '%';
+  document.getElementById('cDone').textContent  = done;
+  document.getElementById('cLeft').textContent  = left;
+  document.getElementById('cPct').textContent   = pct+'%';
+  document.getElementById('progChip').textContent = done+' / '+total;
+  document.getElementById('mainBar').style.width  = pct+'%';
+}
+
+function toggle(id) {
+  const cb = document.getElementById('cb-'+id);
+  if(!cb) return;
+  cb.checked ? state[id]=1 : delete state[id];
+  save(state);
 }
 
 function applyFilters() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q   = document.getElementById('searchInput').value.toLowerCase();
   const col = document.getElementById('filterCollege').value;
-  const sz = document.getElementById('filterSize').value;
+  const sz  = document.getElementById('filterSize').value;
   const clr = document.getElementById('filterColor').value;
-  const ct = document.getElementById('filterCity').value;
+  const ct  = document.getElementById('filterCity').value;
   const trm = document.getElementById('filterTerm').value;
-  const st = document.getElementById('filterStatus').value;
-
+  const st  = document.getElementById('filterStatus').value;
   let visible = 0;
-
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name = tr.querySelector('.td-name').textContent.toLowerCase();
+    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
     const college = tr.querySelector('.td-college').textContent.trim();
-    const size = tr.querySelector('.size-badge')?.textContent.trim() || '';
-    const color = tr.querySelector('.color-pill')?.textContent.trim() || '';
-    const city = tr.querySelector('.td-city').textContent.trim();
-    const term = tr.dataset.term || '';
-    const id = tr.dataset.id;
-    const done = !!state[id];
-
+    const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
+    const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
+    const city    = tr.querySelector('.td-city').textContent.trim();
+    const term    = tr.dataset.term||'';
+    const id      = tr.dataset.id;
+    const done    = !!state[id];
     const show =
-      (!q || name.includes(q)) &&
+      (!q   || name.includes(q)) &&
       (!col || college.includes(col)) &&
-      (!sz || size === sz) &&
+      (!sz  || size === sz) &&
       (!clr || color === clr) &&
-      (!ct || city === ct) &&
+      (!ct  || city === ct) &&
       (!trm || term === trm) &&
-      (!st || (st === 'done' ? done : !done));
-
+      (!st  || (st==='done' ? done : !done));
     tr.style.display = show ? '' : 'none';
-    if (show) visible++;
+    if(show) visible++;
   });
-
-  document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
-
-  const total = ALL.length;
-  const isFiltered = q || col || sz || clr || ct || trm || st;
+  document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
+  const isFiltered = q||col||sz||clr||ct||trm||st;
   const counter = document.getElementById('filterCounter');
-  const counterNum = document.getElementById('counterNum');
-
-  if (isFiltered && visible < total) {
-    counterNum.textContent = visible;
-    counter.style.display = 'block';
+  if(isFiltered){
+    document.getElementById('counterNum').textContent = visible;
+    counter.style.display = 'flex';
   } else {
     counter.style.display = 'none';
   }
 }
 
 function clearFilters() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('filterCollege').value = '';
-  document.getElementById('filterSize').value = '';
-  document.getElementById('filterColor').value = '';
-  document.getElementById('filterCity').value = '';
-  if (document.getElementById('filterTerm')) document.getElementById('filterTerm').value = '';
-  if (document.getElementById('filterStatus')) document.getElementById('filterStatus').value = '';
+  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterTerm','filterStatus']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   applyFilters();
 }
 
-onValue(checklistRef, (snapshot) => {
-  state = snapshot.val() || {};
-
+function renderFromState(s) {
+  state = s || {};
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const id = tr.dataset.id;
-    const cb = document.getElementById('cb-' + id);
+    const id   = tr.dataset.id;
+    const cb   = document.getElementById('cb-'+id);
     const done = !!state[id];
-
-    if (cb) cb.checked = done;
-    if (cb && cb.nextElementSibling) cb.nextElementSibling.textContent = done ? '✓' : '';
+    if(cb) { cb.checked = done; cb.nextElementSibling.textContent = done?'✓':''; }
     tr.classList.toggle('done-row', done);
   });
-
   updateStats();
   renderBreakdown();
   applyFilters();
+}
+
+// Firebase real-time sync
+onValue(ref(db, DB_KEY), snapshot => {
+  renderFromState(snapshot.val() || {});
 });
 
-window.toggle = toggle;
+window.toggle       = toggle;
 window.applyFilters = applyFilters;
 window.clearFilters = clearFilters;
-window.loadData = loadData;
+window.loadData     = loadData;
 
 loadData();
 </script>
