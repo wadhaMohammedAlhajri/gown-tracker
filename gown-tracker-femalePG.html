@@ -154,6 +154,18 @@ td{padding:11px 14px;vertical-align:middle;}
   </select>
 </div>
 
+<div id="filterCounter" style="display:none;padding:8px 28px;">
+  <span style="background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;
+    padding:5px 16px;border-radius:999px;font-size:.8rem;font-weight:700;">
+    🔍 Showing <span id="counterNum">0</span> students
+  </span>
+  <button onclick="clearFilters()" style="margin-right:8px;padding:5px 14px;
+    border:1.5px solid #e4e9ff;border-radius:999px;background:#fff;
+    font-size:.78rem;font-weight:700;color:#64748b;cursor:pointer;">
+    ✕ Clear filters
+  </button>
+</div>
+
 <div class="table-wrap">
   <table>
     <thead><tr>
@@ -335,6 +347,27 @@ function applyFilters(){
     if(show) visible++;
   });
   document.getElementById('emptyState').style.display=visible===0?'block':'none';
+  const total=ALL.length;
+  const isFiltered = q||col||sz||ct||st||(typeof clr!=='undefined'&&clr)||(typeof trm!=='undefined'&&trm);
+  const counter=document.getElementById('filterCounter');
+  const counterNum=document.getElementById('counterNum');
+  if(isFiltered && visible<total){
+    counterNum.textContent=visible;
+    counter.style.display='block';
+  } else {
+    counter.style.display='none';
+  }
+}
+
+function clearFilters(){
+  document.getElementById('searchInput').value='';
+  document.getElementById('filterCollege').value='';
+  document.getElementById('filterSize').value='';
+  document.getElementById('filterColor').value='';
+  document.getElementById('filterCity').value='';
+  if(document.getElementById('filterTerm')) document.getElementById('filterTerm').value='';
+  if(document.getElementById('filterStatus')) document.getElementById('filterStatus').value='';
+  applyFilters();
 }
 
 loadData();
