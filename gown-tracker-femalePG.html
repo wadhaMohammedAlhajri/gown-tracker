@@ -159,7 +159,6 @@ td{padding:11px 14px;vertical-align:middle;}
   </select>
 </div>
 
-<!-- FILTER COUNTER -->
 <div class="filter-counter" id="filterCounter">
   <span class="chip2">🔍 Showing <span id="counterNum">0</span> students</span>
   <button class="clear-btn" onclick="clearFilters()">✕ Clear filters</button>
@@ -181,14 +180,11 @@ td{padding:11px 14px;vertical-align:middle;}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-// ─────────────────────────────────────────────
 // Google Sheet
 const SHEET_ID   = '1VqEr42UtRab8b2BEGO4lXwbTKVpH67sdmEgZASW-y2k';
 const SHEET_NAME = 'PG Female';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
-// ─────────────────────────────────────────────
 
-// ─────────────────────────────────────────────
 // Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBltfac-apGVD-PdfASqveMA_j77CoPhwg",
@@ -203,10 +199,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
-// غيري اسم المفتاح إذا تبين تفصلينها عن صفحات ثانية
 const KEY = "gownFemaleGraduatesChecklist_v1";
-// ─────────────────────────────────────────────
 
 let ALL = [];
 let state = {};
@@ -451,18 +444,15 @@ function renderState(s) {
   applyFilters();
 }
 
-// Firebase listener
 onValue(ref(db, KEY), (snapshot) => {
   renderState(snapshot.val() || {});
 });
 
-// expose to HTML
 window.toggle = toggle;
 window.applyFilters = applyFilters;
 window.clearFilters = clearFilters;
 window.loadData = loadData;
 
-// start
 loadData();
 </script>
 </body>
