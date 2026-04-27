@@ -163,7 +163,7 @@ td{padding:11px 14px;vertical-align:middle;}
   <table>
     <thead><tr>
       <th></th><th>Sr. No</th><th>Student Name</th><th>Size</th>
-      <th>College</th><th>Color</th><th>City</th><th>Room</th>
+      <th>College</th><th>Color</th><th>Mobile</th><th>City</th><th>Room</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -241,6 +241,7 @@ async function loadData() {
         size:    gv(r,'gown size') || gv(r,'size'),
         college: gv(r,'college'),
         color:   gv(r,'color') || gv(r,'colour'),
+        mobile:  gv(r,'mobile number') || gv(r,'mobile'),
         city:    fixCity(gv(r,'city')),
         room:    gv(r,'room'),
       });
@@ -277,6 +278,7 @@ function renderTable() {
       <td><span class="size-badge">${st.size}</span></td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
+      <td class="td-mobile">${st.mobile||'—'}</td>
       <td class="td-city">${st.city}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.room||'—'}</td>`;
     tbody.appendChild(tr);
