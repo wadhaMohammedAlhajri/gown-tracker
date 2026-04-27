@@ -250,14 +250,16 @@ async function loadData() {
       if (!name) return;
 
       ALL.push({
-        idx: i + 1,
-        id: gv(r, 'sr. no') || gv(r, 'sr.no') || String(i + 1),
+        idx:  i+1,
+        id:   gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
+        srno: gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
         name,
-        size: gv(r, 'gown size') || gv(r, 'size'),
-        college: gv(r, 'college'),
-        color: gv(r, 'color') || gv(r, 'colour'),
-        city: fixCity(gv(r, 'city')),
-        room: gv(r, 'room'),
+        size:    gv(r,'size'),
+        college: gv(r,'college'),
+        color:   gv(r,'color'),
+        mobile:  gv(r,'mobile number'),
+        city:    fixCity(gv(r,'city')),
+        term:    gv(r,'term'),
       });
     });
 
