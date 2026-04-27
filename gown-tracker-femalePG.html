@@ -234,21 +234,19 @@ async function loadData() {
     const rows = json.table.rows;
     const cols = json.table.cols;
 
-    const map = {};
-    cols.forEach((c, i) => {
-      if (c.label) map[c.label.toLowerCase().trim()] = i;
-    });
-
-    const gv = (r, name) => {
+      const map = {};
+    cols.forEach((c,i)=>{ 
+      if(c.label) map[c.label.toLowerCase().trim()]=i; });
+    
+    const gv = (r,name) => {
       const i = map[name.toLowerCase()];
-      return (i != null && r.c[i] && r.c[i].v != null) ? String(r.c[i].v).trim() : '';
+      return (i!=null && r.c[i] && r.c[i].v!=null) ? String(r.c[i].v).trim() : '';
     };
 
     ALL = [];
-    rows.forEach((r, i) => {
-      const name = gv(r, 'student name');
-      if (!name) return;
-
+    rows.forEach((r,i)=>{
+      const name = gv(r,'student name');
+      if(!name) return;
       ALL.push({
         idx:  i+1,
         id:   gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
