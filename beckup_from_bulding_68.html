@@ -261,7 +261,7 @@ const firebaseConfig = {
 };
 
 const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
-const SHEET_NAME = 'system list';
+const SHEET_NAME = 'system list ';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY     = 'gownMaleChecklist_v2';
 
@@ -312,7 +312,7 @@ async function loadData() {
       ALL.push({
         idx:     i+1,
         id:      gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
-        srno:    gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
+        srno:    gv(r,'sr. no') || gv(r,'sr.no') || '',
         name,
         studentId: gv(r,'kfupm id') || gv(r,'student id') || gv(r,'kfupmid') || '',
         size:    gv(r,'size'),
