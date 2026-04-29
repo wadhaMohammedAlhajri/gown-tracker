@@ -134,8 +134,8 @@ td{padding:8px 14px;vertical-align:middle;}
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveNewStudent()">Add Student</button>
+      <button class="btn-cancel" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-save" onclick="window.saveNewStudent()">Add Student</button>
     </div>
   </div>
 </div>
@@ -208,11 +208,7 @@ td{padding:8px 14px;vertical-align:middle;}
     <option>الخبر</option><option>الدمام</option><option>الظهران</option>
     <option>القطيف</option><option>بقيق</option><option>رأس تنورة</option><option>سيهات</option>
   </select>
-  <span class="filter-label">Term:</span>
-  <select onchange="applyFilters()" id="filterTerm">
-    <option value="">All Terms</option>
-    <option>202510</option><option>202520</option><option>202530</option>
-  </select>
+
   <span class="filter-label">Batch:</span>
   <select onchange="applyFilters()" id="filterBatch">
     <option value="">All Batches</option>
@@ -237,7 +233,7 @@ td{padding:8px 14px;vertical-align:middle;}
     <thead><tr>
       <th></th><th>Sr. No</th><th>Student Name</th><th>Student ID</th>
       <th>Size</th><th>Updated Size</th><th>College</th><th>Color</th>
-      <th>Mobile</th><th>City</th><th>Term</th><th>Honor</th>
+      <th>Mobile</th><th>City</th><th>Honor</th>
       <th>Batch</th><th>Status</th><th>Comments</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
@@ -261,7 +257,7 @@ const firebaseConfig = {
 };
 
 const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
-const SHEET_NAME = 'system list ';
+const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY     = 'gownMaleChecklist_v2';
 
@@ -367,21 +363,20 @@ function renderTable() {
     if(isNew) tr.classList.add('new-row');
 
     tr.innerHTML = `
-      <td class="td-check"><label class="chk"><input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
       <td style="font-size:.75rem;color:var(--muted);font-weight:700;white-space:nowrap">${st.srno}</td>
       <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800">NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
-      <td><input class="edit-input" value="${updatedSize}" placeholder="Update..." onchange="updateField('${st.id}','updatedSize',this.value)"></td>
+      <td><input class="edit-input" value="${updatedSize}" placeholder="Update..." onchange="window.updateField('${st.id}','updatedSize',this.value)"></td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
       <td class="td-mobile">${st.mobile||'—'}</td>
       <td class="td-city">${st.city}</td>
-      <td style="font-size:.75rem;color:var(--muted)">${st.term}</td>
       <td>${st.honor ? '<span class="honor-badge">'+st.honor+'</span>' : '—'}</td>
       <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
-      <td><textarea class="comment-input" rows="1" placeholder="Add comment..." onchange="updateField('${st.id}','comment',this.value)">${comment}</textarea></td>`;
+      <td><textarea class="comment-input" rows="1" placeholder="Add comment..." onchange="window.updateField('${st.id}','comment',this.value)">${comment}</textarea></td>`;
     tbody.appendChild(tr);
   });
   applyFilters();
@@ -460,7 +455,6 @@ function applyFilters() {
   const sz  = document.getElementById('filterSize').value;
   const clr = document.getElementById('filterColor').value;
   const ct  = document.getElementById('filterCity').value;
-  const trm = document.getElementById('filterTerm').value;
   const bat = document.getElementById('filterBatch').value;
   const st  = document.getElementById('filterStatus').value;
   let visible = 0;
@@ -470,8 +464,7 @@ function applyFilters() {
     const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
     const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
     const city    = tr.querySelector('.td-city').textContent.trim();
-    const term    = tr.dataset.term||'';
-    const batch   = tr.dataset.batch||'';
+      const batch   = tr.dataset.batch||'';
     const id      = tr.dataset.id;
     const done    = !!getRowState(id).delivered;
     const show =
@@ -480,14 +473,13 @@ function applyFilters() {
       (!sz  || size === sz) &&
       (!clr || color === clr) &&
       (!ct  || city === ct) &&
-      (!trm || term === trm) &&
       (!bat || batch === bat) &&
       (!st  || (st==='done' ? done : !done));
     tr.style.display = show ? '' : 'none';
     if(show) visible++;
   });
   document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
-  const isFiltered = q||col||sz||clr||ct||trm||bat||st;
+  const isFiltered = q||col||sz||clr||ct||bat||st;
   const counter = document.getElementById('filterCounter');
   if(isFiltered){
     document.getElementById('counterNum').textContent = visible;
@@ -498,7 +490,7 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterTerm','filterBatch','filterStatus']
+  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterBatch','filterStatus']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   applyFilters();
 }
