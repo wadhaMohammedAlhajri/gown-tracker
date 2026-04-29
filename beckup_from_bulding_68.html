@@ -232,9 +232,9 @@ td{padding:8px 14px;vertical-align:middle;}
   <table>
     <thead><tr>
       <th></th><th>Sr. No</th><th>Student Name</th><th>Student ID</th>
-      <th>Size</th><th>Updated Size</th><th>College</th><th>Color</th>
-      <th>Mobile</th><th>City</th><th>Honor</th>
-      <th>Batch</th><th>Status</th><th>Comments</th>
+      <th>Size</th><th>Updated Size</th><th>Gender</th><th>College</th><th>Color</th>
+      <th>Level</th><th>Mobile Number</th><th>City</th><th>Honors</th>
+      <th>Status</th><th>Batch</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -312,11 +312,12 @@ async function loadData() {
         name,
         studentId: gv(r,'kfupm id') || gv(r,'student id') || gv(r,'kfupmid') || '',
         size:    gv(r,'size'),
+        gender:  gv(r,'gender') || '',
         college: gv(r,'college'),
         color:   gv(r,'color'),
+        level:   gv(r,'level') || '',
         mobile:  gv(r,'mobile number'),
         city:    fixCity(gv(r,'city')),
-        term:    gv(r,'term'),
         honor:   gv(r,'honor') || gv(r,'honors') || gv(r,'honor rank') || '',
         batch:   gv(r,'batch') || '',
         isNew:   false,
@@ -369,14 +370,15 @@ function renderTable() {
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
       <td><input class="edit-input" value="${updatedSize}" placeholder="Update..." onchange="window.updateField('${st.id}','updatedSize',this.value)"></td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.level||'—'}</td>
       <td class="td-mobile">${st.mobile||'—'}</td>
       <td class="td-city">${st.city}</td>
       <td>${st.honor ? '<span class="honor-badge">'+st.honor+'</span>' : '—'}</td>
-      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
-      <td><textarea class="comment-input" rows="1" placeholder="Add comment..." onchange="window.updateField('${st.id}','comment',this.value)">${comment}</textarea></td>`;
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>`;
     tbody.appendChild(tr);
   });
   applyFilters();
