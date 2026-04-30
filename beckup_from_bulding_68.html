@@ -299,40 +299,20 @@ function showToast(msg, success=true) {
 
 // Write to Google Sheet via Apps Script (no-cors)
 function writeToSheet(payload) {
-  return new Promise((resolve) => {
-    const callbackName = "appsScriptCallback_" + Date.now();
+  if (!APPS_SCRIPT_URL) {
+    showToast('Apps Script URL missing', false);
+    return;
+  }
 
-    window[callbackName] = function(res) {
-      delete window[callbackName];
-      script.remove();
+  const data = encodeURIComponent(JSON.stringify({
+    ...payload,
+    sheetName: SHEET_NAME
+  }));
 
-      if (res && res.success) {
-        showToast("✅ Sheet updated!");
-      } else {
-        showToast("❌ Sheet error: " + (res?.error || "Unknown error"), false);
-      }
+  const img = new Image();
+  img.src = APPS_SCRIPT_URL + '?data=' + data + '&t=' + Date.now();
 
-      resolve(res);
-    };
-
-    const script = document.createElement("script");
-    script.src =
-      APPS_SCRIPT_URL +
-      "?callback=" + callbackName +
-      "&data=" + encodeURIComponent(JSON.stringify({
-        ...payload,
-        sheetName: SHEET_NAME
-      }));
-
-    script.onerror = function() {
-      delete window[callbackName];
-      script.remove();
-      showToast("❌ Apps Script URL error", false);
-      resolve({ success: false });
-    };
-
-    document.body.appendChild(script);
-  });
+  showToast('✅ Sent to Google Sheet');
 }
 
 const fixCity = c => {
