@@ -272,7 +272,7 @@ const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
 const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY     = 'gownMaleChecklist_v2';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBRHs7mIzT-wWnWOV4HdQ-xHR9zdXwGv-zJRMKcP6Aw5Ad0vNVegs9r2stBp7c2XDcnw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymC6E35vwb8KVasAla9yUZcH4WD8InQhaxQkriv2ApVUMKLBfoa4MaCR1DAaUe_eJQ0A/exec';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -298,18 +298,41 @@ function showToast(msg, success=true) {
 }
 
 // Write to Google Sheet via Apps Script (no-cors)
-async function writeToSheet(payload) {
-  if(!APPS_SCRIPT_URL) return;
-  try {
-    // Use no-cors since Apps Script doesn't return CORS headers for cross-origin
-    await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({...payload, sheetName: SHEET_NAME})), {
-      method: 'GET',
-    });
-    showToast('✅ Sheet updated!');
-  } catch(e) {
-    console.warn('Sheet write failed:', e);
-    showToast('⚠️ Saved locally, sheet update failed', false);
-  }
+function writeToSheet(payload) {
+  return new Promise((resolve) => {
+    const callbackName = "appsScriptCallback_" + Date.now();
+
+    window[callbackName] = function(res) {
+      delete window[callbackName];
+      script.remove();
+
+      if (res && res.success) {
+        showToast("✅ Sheet updated!");
+      } else {
+        showToast("❌ Sheet error: " + (res?.error || "Unknown error"), false);
+      }
+
+      resolve(res);
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      APPS_SCRIPT_URL +
+      "?callback=" + callbackName +
+      "&data=" + encodeURIComponent(JSON.stringify({
+        ...payload,
+        sheetName: SHEET_NAME
+      }));
+
+    script.onerror = function() {
+      delete window[callbackName];
+      script.remove();
+      showToast("❌ Apps Script URL error", false);
+      resolve({ success: false });
+    };
+
+    document.body.appendChild(script);
+  });
 }
 
 const fixCity = c => {
@@ -609,24 +632,27 @@ function openModal(){ document.getElementById('modalBg').classList.add('open'); 
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
 
 function saveNewStudent() {
-  const name = document.getElementById('m_name').value.trim();
-  if(!name){ showToast('Student Name is required', false); return; }
-  const id = 'new_'+Date.now();
+ const name = document.getElementById('m_name').value.trim();
+if(!name){ showToast('Student Name is required', false); return; }
+
+const srnoValue = document.getElementById('m_srno').value.trim();
+const id = srnoValue || ('new_' + Date.now());
+ 
   const newSt = {
-    isNew:1,
-    srno:    document.getElementById('m_srno').value.trim(),
-    name,
-    studentId: document.getElementById('m_id').value.trim(),
-    size:    document.getElementById('m_size').value.trim(),
-    gender:  document.getElementById('m_gender').value.trim(),
-    college: document.getElementById('m_college').value.trim(),
-    color:   document.getElementById('m_color').value,
-    level:   document.getElementById('m_level').value.trim(),
-    mobile:  document.getElementById('m_mobile').value.trim(),
-    city:    document.getElementById('m_city').value.trim(),
-    honor:   document.getElementById('m_honor').value,
-    batch:   document.getElementById('m_batch').value,
-  };
+  isNew:1,
+  srno: "", 
+  name,
+  studentId: document.getElementById('m_id').value.trim(),
+  size: document.getElementById('m_size').value.trim(),
+  gender: document.getElementById('m_gender').value.trim(),
+  college: document.getElementById('m_college').value.trim(),
+  color: document.getElementById('m_color').value,
+  level: document.getElementById('m_level').value.trim(),
+  mobile: document.getElementById('m_mobile').value.trim(),
+  city: document.getElementById('m_city').value.trim(),
+  honor: document.getElementById('m_honor').value,
+  batch: document.getElementById('m_batch').value,
+};
   if(!state[id]) state[id]={};
   Object.assign(state[id], newSt);
   savePart(id, newSt);
