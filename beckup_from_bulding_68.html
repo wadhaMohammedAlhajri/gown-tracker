@@ -231,7 +231,7 @@ td{padding:8px 14px;vertical-align:middle;}
 <div class="table-wrap">
   <table>
     <thead><tr>
-      <th></th><th style="width:20px;min-width:20px">Sr. No</th><th>Student Name</th><th>Student ID</th>
+      <th style="width:40px"></th><th style="width:55px">Sr. No</th><th>Student Name</th><th>Student ID</th>
       <th>Size</th><th>Updated Size</th><th>Gender</th><th>College</th><th>Color</th>
       <th>Level</th><th>Mobile Number</th><th>City</th><th>Honors</th>
       <th>Status</th><th>Batch</th>
@@ -378,7 +378,7 @@ function renderTable() {
 
     tr.innerHTML = `
       <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
-      <td style="font-size:.75rem;color:var(--muted);font-weight:700;white-space:nowrap">${st.srno}</td>
+      <td style="font-size:.72rem;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center">${st.srno}</td>
       <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800">NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
