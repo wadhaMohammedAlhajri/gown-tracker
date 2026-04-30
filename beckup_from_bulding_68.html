@@ -259,7 +259,9 @@ const firebaseConfig = {
 const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
 const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
-const DB_KEY     = 'gownMaleChecklist_v2';
+const DB_KEY         = 'gownMaleChecklist_v2';
+// ⬇️ حط هنا رابط الـ Apps Script
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-7YDDEbE1hykfPFBnn1XM0eA1HOJT0h0do5r37I3L0FRmXJvDA2SjuYb1wT0dIScIXQ/exec';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -275,6 +277,17 @@ const COLOR_STYLE = {
 
 const saveAll  = () => set(ref(db, DB_KEY), state || {});
 const savePart = (id, data) => update(ref(db, `${DB_KEY}/${id}`), data);
+
+// Write to Google Sheet via Apps Script
+async function writeToSheet(payload) {
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({...payload, sheetName: SHEET_NAME}),
+    });
+  } catch(e) { console.warn('Sheet write failed:', e); }
+}
 
 const fixCity = c => {
   if(!c) return '';
@@ -369,7 +382,10 @@ function renderTable() {
       <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800">NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
-      <td><input class="edit-input" value="${updatedSize}" placeholder="Update..." onchange="window.updateField('${st.id}','updatedSize',this.value)"></td>
+      <td style="white-space:nowrap">
+        <input class="edit-input" id="us-${st.id}" value="${updatedSize}" placeholder="Update size...">
+        <button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="margin-right:4px;padding:3px 8px;border:none;border-radius:6px;background:#4f46e5;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer">✓ Update</button>
+      </td>
       <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
@@ -552,6 +568,19 @@ function saveNewStudent() {
 onValue(ref(db, DB_KEY), snapshot => {
   renderFromState(snapshot.val() || {});
 });
+
+function pushUpdatedSize(id, srno) {
+  const input = document.getElementById('us-'+id);
+  if(!input) return;
+  const val = input.value.trim();
+  if(!val){ alert('Please enter a size'); return; }
+  updateField(id, 'updatedSize', val);
+  // Write to sheet
+  writeToSheet({action:'updateSize', srno, updatedSize: val});
+  // Visual feedback
+  input.style.borderColor = '#059669';
+  setTimeout(()=>input.style.borderColor='', 2000);
+}
 
 window.toggle       = toggle;
 window.applyFilters = applyFilters;
