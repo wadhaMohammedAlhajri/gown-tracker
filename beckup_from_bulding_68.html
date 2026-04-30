@@ -53,8 +53,8 @@ select:focus{border-color:#4f46e5;}
 .filter-counter .chip2{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;padding:5px 16px;border-radius:999px;font-size:.8rem;font-weight:700;}
 .filter-counter .clear-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:999px;background:#fff;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;}
 .filter-counter .clear-btn:hover{background:#eff6ff;border-color:#4f46e5;color:#4f46e5;}
-.table-wrap{margin:18px 28px 40px;background:var(--white);border-radius:20px;border:1.5px solid var(--border);box-shadow:var(--s1);overflow:hidden;}
-table{width:100%;border-collapse:collapse;font-size:.84rem;table-layout:fixed;}
+.table-wrap{margin:18px 28px 40px;background:var(--white);border-radius:20px;border:1.5px solid var(--border);box-shadow:var(--s1);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.84rem;}
 thead th{background:#f8f9ff;padding:12px 14px;text-align:left;font-weight:800;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
 tbody tr{border-bottom:1px solid #f0f4ff;transition:background .15s;}
 tbody tr:last-child{border-bottom:none;}
@@ -231,8 +231,8 @@ td{padding:8px 14px;vertical-align:middle;}
 <div class="table-wrap">
   <table>
     <thead><tr>
-      <th style="width:40px"></th><th style="width:55px">Sr. No</th><th>Student Name</th><th>Student ID</th>
-      <th>Size</th><th>Updated Size</th><th>Gender</th><th>College</th><th>Color</th>
+      <th style="width:40px"></th><th style="width:55px">Sr. No</th><th style="min-width:180px">Student Name</th><th>Student ID</th>
+      <th>Size</th><th style="min-width:160px">Updated Size</th><th>Gender</th><th>College</th><th>Color</th>
       <th>Level</th><th>Mobile Number</th><th>City</th><th>Honors</th>
       <th>Status</th><th>Batch</th>
     </tr></thead>
@@ -256,12 +256,12 @@ const firebaseConfig = {
   appId: "1:481168743771:web:b5d61105a9018f95d38e7e"
 };
 
-const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
-const SHEET_NAME = 'system list';
+const SHEET_ID   = '1oCqHPEhwQ-8QZ57acdZiqSAZ22MjqdVMePWTM6g8zrI';
+const SHEET_NAME = 'Undergrads no honor';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY         = 'gownMaleChecklist_v2';
 // ⬇️ حط هنا رابط الـ Apps Script
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-7YDDEbE1hykfPFBnn1XM0eA1HOJT0h0do5r37I3L0FRmXJvDA2SjuYb1wT0dIScIXQ/exec';
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
