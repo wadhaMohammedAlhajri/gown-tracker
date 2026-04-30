@@ -30,7 +30,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .bar-bg{background:#e8ebff;border-radius:999px;height:12px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:999px;width:0%;background:linear-gradient(90deg,#4f46e5,#06b6d4);transition:width .5s cubic-bezier(.4,0,.2,1);}
 .breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 28px 0;}
-@media(max-width:1024px){.breakdown{grid-template-columns:repeat(2,1fr);}}@media(max-width:600px){.breakdown{grid-template-columns:1fr;}}
+@media(max-width:1024px){.breakdown{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.breakdown{grid-template-columns:1fr;}}
 .bk-panel{background:var(--white);border-radius:16px;border:1.5px solid var(--border);padding:16px 18px;box-shadow:var(--s1);}
 .bk-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
 .bk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4ff;}
@@ -78,12 +79,8 @@ td{padding:8px 14px;vertical-align:middle;}
 .honor-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:800;background:#fef3c7;color:#d97706;border:1px solid #fde68a;}
 .status-delivered{color:#059669;font-weight:700;font-size:.75rem;}
 .status-pending{color:#dc2626;font-weight:700;font-size:.75rem;}
-/* Editable inputs */
-.edit-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.8rem;width:90px;background:#f8f9ff;color:var(--text);outline:none;}
+.edit-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.8rem;width:80px;background:#f8f9ff;color:var(--text);outline:none;}
 .edit-input:focus{border-color:#4f46e5;background:#fff;}
-.comment-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.78rem;width:120px;background:#f8f9ff;color:var(--text);outline:none;resize:none;}
-.comment-input:focus{border-color:#4f46e5;background:#fff;}
-/* Add student modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
 .modal{background:#fff;border-radius:20px;padding:28px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);}
@@ -96,12 +93,15 @@ td{padding:8px 14px;vertical-align:middle;}
 .btn-cancel{padding:9px 20px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
 .btn-save{padding:9px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
 .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1f4b;color:#fff;padding:10px 20px;border-radius:10px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;}
+.toast.show{opacity:1;}
 @media(max-width:768px){.topbar,.stats,.filters,.legend,.prog-wrap,.breakdown,.table-wrap,.filter-counter{padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}.stats{padding:14px 14px 0;}.td-college,.td-mobile,.td-city{display:none;}}
 </style>
 </head>
 <body>
 
-<!-- ADD STUDENT MODAL -->
+<div id="toast" class="toast"></div>
+
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3>➕ Add New Student</h3>
@@ -110,6 +110,7 @@ td{padding:8px 14px;vertical-align:middle;}
       <div><label>Student Name *</label><input id="m_name" placeholder="Full name"></div>
       <div><label>Student ID</label><input id="m_id" placeholder="202XXXXXX"></div>
       <div><label>Size</label><input id="m_size" placeholder='e.g. 30"'></div>
+      <div><label>Gender</label><input id="m_gender" placeholder="Male/Female"></div>
       <div><label>College</label><input id="m_college" placeholder="College name"></div>
       <div><label>Color</label>
         <select id="m_color"><option value="">—</option>
@@ -117,9 +118,9 @@ td{padding:8px 14px;vertical-align:middle;}
           <option>Orange</option><option>Red</option><option>Yellow</option>
         </select>
       </div>
+      <div><label>Level</label><input id="m_level" placeholder="e.g. Bachelor"></div>
       <div><label>Mobile</label><input id="m_mobile" placeholder="5XXXXXXXX"></div>
       <div><label>City</label><input id="m_city" placeholder="City"></div>
-      <div><label>Term</label><input id="m_term" placeholder="202520"></div>
       <div><label>Honor</label>
         <select id="m_honor"><option value="">—</option>
           <option>1</option><option>2</option><option>3</option>
@@ -146,8 +147,8 @@ td{padding:8px 14px;vertical-align:middle;}
     <h1>Male Undergraduate Students — Gown Distribution</h1>
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
-  <button class="add-btn" onclick="openModal()">➕ Add Student</button>
-  <button class="reload-btn" onclick="loadData()">🔄 Refresh</button>
+  <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
+  <button class="reload-btn" onclick="window.loadData()">🔄 Refresh</button>
 </div>
 
 <div id="loadingState" class="loading">
@@ -209,7 +210,6 @@ td{padding:8px 14px;vertical-align:middle;}
     <option>الخبر</option><option>الدمام</option><option>الظهران</option>
     <option>القطيف</option><option>بقيق</option><option>رأس تنورة</option><option>سيهات</option>
   </select>
-
   <span class="filter-label">Batch:</span>
   <select onchange="applyFilters()" id="filterBatch">
     <option value="">All Batches</option>
@@ -232,10 +232,21 @@ td{padding:8px 14px;vertical-align:middle;}
 <div class="table-wrap">
   <table>
     <thead><tr>
-      <th style="width:40px"></th><th style="width:55px">Sr. No</th><th style="min-width:180px">Student Name</th><th>Student ID</th>
-      <th>Size</th><th style="min-width:160px">Updated Size</th><th>Gender</th><th>College</th><th>Color</th>
-      <th>Level</th><th>Mobile Number</th><th>City</th><th>Honors</th>
-      <th>Status</th><th>Batch</th>
+      <th style="width:40px"></th>
+      <th style="width:55px">Sr. No</th>
+      <th style="min-width:180px">Student Name</th>
+      <th>Student ID</th>
+      <th>Size</th>
+      <th style="min-width:180px">Updated Size</th>
+      <th>Gender</th>
+      <th>College</th>
+      <th>Color</th>
+      <th>Level</th>
+      <th>Mobile Number</th>
+      <th>City</th>
+      <th>Honors</th>
+      <th>Status</th>
+      <th>Batch</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -260,15 +271,14 @@ const firebaseConfig = {
 const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
 const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
-const DB_KEY         = 'gownMaleChecklist_v2';
-// ⬇️ حط هنا رابط الـ Apps Script
+const DB_KEY     = 'gownMaleChecklist_v2';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBRHs7mIzT-wWnWOV4HdQ-xHR9zdXwGv-zJRMKcP6Aw5Ad0vNVegs9r2stBp7c2XDcnw/exec';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
 let ALL   = [];
-let state = {}; // { id: { delivered, updatedSize, comment, isNew, batch } }
+let state = {};
 
 const COLOR_STYLE = {
   Yellow:['#fef3c7','#d97706'], Gray:['#f3f4f6','#6b7280'],
@@ -276,18 +286,30 @@ const COLOR_STYLE = {
   Blue:['#eff6ff','#2563eb'],   Brown:['#fdf6ec','#92400e'],
 };
 
-const saveAll  = () => set(ref(db, DB_KEY), state || {});
 const savePart = (id, data) => update(ref(db, `${DB_KEY}/${id}`), data);
 
-// Write to Google Sheet via Apps Script
+// Toast notification
+function showToast(msg, success=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = success ? '#059669' : '#dc2626';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// Write to Google Sheet via Apps Script (no-cors)
 async function writeToSheet(payload) {
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  if(!APPS_SCRIPT_URL) return;
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({...payload, sheetName: SHEET_NAME}),
+    // Use no-cors since Apps Script doesn't return CORS headers for cross-origin
+    await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({...payload, sheetName: SHEET_NAME})), {
+      method: 'GET',
     });
-  } catch(e) { console.warn('Sheet write failed:', e); }
+    showToast('✅ Sheet updated!');
+  } catch(e) {
+    console.warn('Sheet write failed:', e);
+    showToast('⚠️ Saved locally, sheet update failed', false);
+  }
 }
 
 const fixCity = c => {
@@ -310,9 +332,12 @@ async function loadData() {
 
     const map = {};
     cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
-    const gv = (r,name) => {
-      const i = map[name.toLowerCase()];
-      return (i!=null && r.c[i] && r.c[i].v!=null) ? String(r.c[i].v).trim() : '';
+    const gv = (r,...names) => {
+      for(const name of names){
+        const i = map[name.toLowerCase()];
+        if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
+      }
+      return '';
     };
 
     ALL = [];
@@ -320,21 +345,21 @@ async function loadData() {
       const name = gv(r,'student name');
       if(!name) return;
       ALL.push({
-        idx:     i+1,
-        id:      gv(r,'sr. no') || gv(r,'sr.no') || String(i+1),
-        srno:    gv(r,'sr. no') || gv(r,'sr.no') || '',
+        idx:       i+1,
+        id:        gv(r,'sr. no','sr.no') || String(i+1),
+        srno:      gv(r,'sr. no','sr.no') || '',
         name,
-        studentId: gv(r,'kfupm id') || gv(r,'student id') || gv(r,'kfupmid') || '',
-        size:    gv(r,'size'),
-        gender:  gv(r,'gender') || gv(r,'GENDER') || '',
-        college: gv(r,'college'),
-        color:   gv(r,'color') || gv(r,'COLOR') || '',
-        level:   gv(r,'level') || gv(r,'Level') || '',
-        mobile:  gv(r,'mobile number') || gv(r,'Mobile Number') || '',
-        city:    fixCity(gv(r,'city') || gv(r,'City') || ''),
-        honor:   gv(r,'honors') || gv(r,'honor') || gv(r,'Honors') || '',
-        batch:   gv(r,'batch') || gv(r,'Batch') || '',
-        isNew:   false,
+        studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
+        size:      gv(r,'size'),
+        gender:    gv(r,'gender'),
+        college:   gv(r,'college'),
+        color:     gv(r,'color','colour'),
+        level:     gv(r,'level'),
+        mobile:    gv(r,'mobile number','mobile'),
+        city:      fixCity(gv(r,'city')),
+        honor:     gv(r,'honors','honor','honor rank'),
+        batch:     gv(r,'batch'),
+        isNew:     false,
       });
     });
 
@@ -353,39 +378,35 @@ async function loadData() {
   }
 }
 
-function getRowState(id) {
-  return state[id] || {};
-}
+function getRowState(id) { return state[id] || {}; }
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
   ALL.forEach(st => {
     const rs = getRowState(st.id);
-    const delivered = !!rs.delivered;
+    const delivered  = !!rs.delivered;
     const updatedSize = rs.updatedSize || '';
-    const comment = rs.comment || '';
     const isNew = st.isNew || !!rs.isNew;
     const batch = rs.batch || st.batch || '';
 
     const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
     const tr = document.createElement('tr');
     tr.id = 'row-'+st.id;
-    tr.dataset.id   = st.id;
-    tr.dataset.term = st.term||'';
+    tr.dataset.id    = st.id;
     tr.dataset.batch = batch;
     if(delivered) tr.classList.add('done-row');
-    if(isNew) tr.classList.add('new-row');
+    if(isNew)     tr.classList.add('new-row');
 
     tr.innerHTML = `
       <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
       <td style="font-size:.72rem;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center">${st.srno}</td>
-      <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800">NEW</span>':''}</td>
+      <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800"> NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
       <td style="white-space:nowrap">
-        <input class="edit-input" id="us-${st.id}" value="${updatedSize}" placeholder="Update size...">
-        <button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="margin-right:4px;padding:3px 8px;border:none;border-radius:6px;background:#4f46e5;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer">✓ Update</button>
+        <input class="edit-input" id="us-${st.id}" value="${updatedSize}" placeholder="New size...">
+        <button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="padding:4px 10px;border:none;border-radius:6px;background:#4f46e5;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;margin-right:2px">✓ Update</button>
       </td>
       <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
@@ -393,7 +414,7 @@ function renderTable() {
       <td style="font-size:.78rem;color:var(--muted)">${st.level||'—'}</td>
       <td class="td-mobile">${st.mobile||'—'}</td>
       <td class="td-city">${st.city}</td>
-      <td>${st.honor ? '<span class="honor-badge">'+st.honor+'</span>' : '—'}</td>
+      <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
       <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>`;
     tbody.appendChild(tr);
@@ -405,11 +426,10 @@ function renderBreakdown() {
   const countBy = key => {
     const m = {};
     ALL.forEach(st => {
-      const v = st[key]||'—';
+      const v = (key==='batch' ? (getRowState(st.id).batch||st.batch) : st[key]) || '—';
       if(!m[v]) m[v] = {total:0, handed:0};
       m[v].total++;
-      const rs = getRowState(st.id);
-      if(rs.delivered) m[v].handed++;
+      if(getRowState(st.id).delivered) m[v].handed++;
     });
     return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
   };
@@ -451,7 +471,6 @@ function toggle(id) {
   if(!state[id]) state[id] = {};
   state[id].delivered = cb.checked ? 1 : 0;
   savePart(id, {delivered: cb.checked ? 1 : 0});
-  // Update UI
   const tr = document.getElementById('row-'+id);
   tr.classList.toggle('done-row', cb.checked);
   cb.nextElementSibling.textContent = cb.checked ? '✓' : '';
@@ -469,6 +488,17 @@ function updateField(id, field, value) {
   savePart(id, {[field]: value});
 }
 
+function pushUpdatedSize(id, srno) {
+  const input = document.getElementById('us-'+id);
+  if(!input) return;
+  const val = input.value.trim();
+  if(!val){ showToast('Please enter a size', false); return; }
+  updateField(id, 'updatedSize', val);
+  writeToSheet({action:'updateSize', srno, updatedSize: val});
+  input.style.borderColor = '#059669';
+  setTimeout(()=>{ if(input) input.style.borderColor=''; }, 2000);
+}
+
 function applyFilters() {
   const q   = document.getElementById('searchInput').value.toLowerCase();
   const col = document.getElementById('filterCollege').value;
@@ -484,7 +514,7 @@ function applyFilters() {
     const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
     const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
     const city    = tr.querySelector('.td-city').textContent.trim();
-      const batch   = tr.dataset.batch||'';
+    const batch   = tr.dataset.batch||'';
     const id      = tr.dataset.id;
     const done    = !!getRowState(id).delivered;
     const show =
@@ -517,17 +547,17 @@ function clearFilters() {
 
 function renderFromState(s) {
   state = s || {};
-  // Add any new students from Firebase
-  const fbNewStudents = Object.entries(state).filter(([id,v])=>v.isNew);
-  fbNewStudents.forEach(([id,v])=>{
+  // Merge new students from Firebase
+  Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
     if(!ALL.find(st=>st.id===id)){
       ALL.push({
-        idx:0, id, srno:v.srno||id, name:v.name||'',
+        idx:0, id, srno:v.srno||'', name:v.name||'',
         studentId:v.studentId||'', size:v.size||'',
-        college:v.college||'', color:v.color||'',
+        gender:v.gender||'', college:v.college||'',
+        color:v.color||'', level:v.level||'',
         mobile:v.mobile||'', city:v.city||'',
-        term:v.term||'', honor:v.honor||'',
-        batch:v.batch||'', isNew:true,
+        honor:v.honor||'', batch:v.batch||'',
+        isNew:true,
       });
     }
   });
@@ -536,62 +566,52 @@ function renderFromState(s) {
   renderTable(); renderBreakdown(); updateStats();
 }
 
-// Add student modal
 function openModal(){ document.getElementById('modalBg').classList.add('open'); }
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
 
 function saveNewStudent() {
   const name = document.getElementById('m_name').value.trim();
-  if(!name){ alert('Student Name is required'); return; }
+  if(!name){ showToast('Student Name is required', false); return; }
   const id = 'new_'+Date.now();
   const newSt = {
-    isNew:1, srno:document.getElementById('m_srno').value||id,
-    name, studentId:document.getElementById('m_id').value,
-    size:document.getElementById('m_size').value,
-    college:document.getElementById('m_college').value,
-    color:document.getElementById('m_color').value,
-    mobile:document.getElementById('m_mobile').value,
-    city:document.getElementById('m_city').value,
-    term:document.getElementById('m_term').value,
-    honor:document.getElementById('m_honor').value,
-    batch:document.getElementById('m_batch').value,
+    isNew:1,
+    srno:    document.getElementById('m_srno').value.trim(),
+    name,
+    studentId: document.getElementById('m_id').value.trim(),
+    size:    document.getElementById('m_size').value.trim(),
+    gender:  document.getElementById('m_gender').value.trim(),
+    college: document.getElementById('m_college').value.trim(),
+    color:   document.getElementById('m_color').value,
+    level:   document.getElementById('m_level').value.trim(),
+    mobile:  document.getElementById('m_mobile').value.trim(),
+    city:    document.getElementById('m_city').value.trim(),
+    honor:   document.getElementById('m_honor').value,
+    batch:   document.getElementById('m_batch').value,
   };
   if(!state[id]) state[id]={};
   Object.assign(state[id], newSt);
   savePart(id, newSt);
+  // Write to sheet
+  writeToSheet({action:'addStudent', ...newSt});
   closeModal();
-  // Clear form
-  ['m_srno','m_name','m_id','m_size','m_college','m_mobile','m_city','m_term']
+  ['m_srno','m_name','m_id','m_size','m_gender','m_college','m_level','m_mobile','m_city']
     .forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
   ['m_color','m_honor','m_batch'].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
 }
 
-// Firebase sync
 onValue(ref(db, DB_KEY), snapshot => {
   renderFromState(snapshot.val() || {});
 });
 
-function pushUpdatedSize(id, srno) {
-  const input = document.getElementById('us-'+id);
-  if(!input) return;
-  const val = input.value.trim();
-  if(!val){ alert('Please enter a size'); return; }
-  updateField(id, 'updatedSize', val);
-  // Write to sheet
-  writeToSheet({action:'updateSize', srno, updatedSize: val});
-  // Visual feedback
-  input.style.borderColor = '#059669';
-  setTimeout(()=>input.style.borderColor='', 2000);
-}
-
-window.toggle       = toggle;
-window.applyFilters = applyFilters;
-window.clearFilters = clearFilters;
-window.loadData     = loadData;
-window.openModal    = openModal;
-window.closeModal   = closeModal;
-window.saveNewStudent = saveNewStudent;
-window.updateField  = updateField;
+window.toggle          = toggle;
+window.applyFilters    = applyFilters;
+window.clearFilters    = clearFilters;
+window.loadData        = loadData;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.saveNewStudent  = saveNewStudent;
+window.updateField     = updateField;
+window.pushUpdatedSize = pushUpdatedSize;
 
 loadData();
 </script>
