@@ -29,8 +29,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .prog-head .chip{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;padding:2px 12px;border-radius:999px;font-weight:800;}
 .bar-bg{background:#e8ebff;border-radius:999px;height:12px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:999px;width:0%;background:linear-gradient(90deg,#4f46e5,#06b6d4);transition:width .5s cubic-bezier(.4,0,.2,1);}
-.breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 28px 0;}
-@media(max-width:768px){.breakdown{grid-template-columns:1fr;}}
+.breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 28px 0;}
+@media(max-width:1024px){.breakdown{grid-template-columns:repeat(2,1fr);}}@media(max-width:600px){.breakdown{grid-template-columns:1fr;}}
 .bk-panel{background:var(--white);border-radius:16px;border:1.5px solid var(--border);padding:16px 18px;box-shadow:var(--s1);}
 .bk-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
 .bk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4ff;}
@@ -170,6 +170,7 @@ td{padding:8px 14px;vertical-align:middle;}
   <div class="bk-panel"><div class="bk-title">📏 By Size</div><div id="bkSize"></div></div>
   <div class="bk-panel"><div class="bk-title">🏫 By College</div><div id="bkCollege"></div></div>
   <div class="bk-panel"><div class="bk-title">🏙️ By City</div><div id="bkCity"></div></div>
+  <div class="bk-panel"><div class="bk-title">📦 By Batch</div><div id="bkBatch"></div></div>
 </div>
 <div class="legend" style="margin-top:14px;">
   <span style="font-size:.73rem;font-weight:800;color:var(--muted);">College Colors:</span>
@@ -325,14 +326,14 @@ async function loadData() {
         name,
         studentId: gv(r,'kfupm id') || gv(r,'student id') || gv(r,'kfupmid') || '',
         size:    gv(r,'size'),
-        gender:  gv(r,'gender') || '',
+        gender:  gv(r,'gender') || gv(r,'GENDER') || '',
         college: gv(r,'college'),
-        color:   gv(r,'color'),
-        level:   gv(r,'level') || '',
-        mobile:  gv(r,'mobile number'),
-        city:    fixCity(gv(r,'city')),
-        honor:   gv(r,'honor') || gv(r,'honors') || gv(r,'honor rank') || '',
-        batch:   gv(r,'batch') || '',
+        color:   gv(r,'color') || gv(r,'COLOR') || '',
+        level:   gv(r,'level') || gv(r,'Level') || '',
+        mobile:  gv(r,'mobile number') || gv(r,'Mobile Number') || '',
+        city:    fixCity(gv(r,'city') || gv(r,'City') || ''),
+        honor:   gv(r,'honors') || gv(r,'honor') || gv(r,'Honors') || '',
+        batch:   gv(r,'batch') || gv(r,'Batch') || '',
         isNew:   false,
       });
     });
@@ -428,6 +429,7 @@ function renderBreakdown() {
   panel('bkSize',    countBy('size'));
   panel('bkCollege', countBy('college'));
   panel('bkCity',    countBy('city'));
+  panel('bkBatch',   countBy('batch'));
 }
 
 function updateStats() {
