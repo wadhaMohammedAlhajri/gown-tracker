@@ -150,7 +150,7 @@ td{padding:8px 14px;vertical-align:middle;}
   </div>
   <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
   <button class="reload-btn" onclick="window.exportExcel()">📥 Export Excel</button>
-  <button class="reload-btn" onclick="window.loadData()">🔄 Refresh</button>
+  <button class="reload-btn" onclick="window.loadData(true)">🔄 Refresh</button>
 </div>
 
 <div id="loadingState" class="loading">
@@ -276,7 +276,7 @@ const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
 const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY     = 'gownMaleChecklist_v2';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxktIuYGIGvliC7MA7lqqO-WJfZZOcCRXsi1uMh9FedaRp7wLFvIkh5PKDLDRXL_zXG/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBRHs7mIzT-wWnWOV4HdQ-xHR9zdXwGv-zJRMKcP6Aw5Ad0vNVegs9r2stBp7c2XDcnw/exec';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -335,58 +335,33 @@ const fixCity = c => {
   return c;
 };
 
-async function loadData() {
+async function loadData(forceRefresh=false) {
   document.getElementById('loadingState').style.display='block';
   document.getElementById('mainContent').style.display='none';
+
+  // Try cache first (valid for 5 minutes)
+  const CACHE_KEY = 'gownCache_v1';
+  const CACHE_TTL = 5 * 60 * 1000;
+  if(!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if(cached) {
+        const {data, ts} = JSON.parse(cached);
+        if(Date.now() - ts < CACHE_TTL) {
+          processSheetData(data);
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
   try {
     const res  = await fetch(SHEET_URL);
     const text = await res.text();
     const json = JSON.parse(text.match(/setResponse\(([\s\S]*)\)/)[1]);
-    const rows = json.table.rows;
-    const cols = json.table.cols;
-
-    const map = {};
-    cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
-    const gv = (r,...names) => {
-      for(const name of names){
-        const i = map[name.toLowerCase()];
-        if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
-      }
-      return '';
-    };
-
-    ALL = [];
-    rows.forEach((r,i)=>{
-      const name = gv(r,'student name');
-      if(!name) return;
-      const sheetStatus = gv(r,'status').toLowerCase();
-      const deliveredFromSheet = sheetStatus === 'delivered' || sheetStatus === 'تم التوصيل';
-      ALL.push({
-        idx:       i+1,
-        id:        gv(r,'sr. no','sr.no') || String(i+1),
-        srno:      gv(r,'sr. no','sr.no') || '',
-        name,
-        studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
-        size:      gv(r,'size'),
-        gender:    gv(r,'gender'),
-        college:   gv(r,'college'),
-        color:     gv(r,'color','colour'),
-        level:     gv(r,'level'),
-        mobile:    gv(r,'mobile number','mobile'),
-        city:      fixCity(gv(r,'city')),
-        honor:     gv(r,'honors','honor','honor rank'),
-        batch:     gv(r,'batch'),
-        deliveredFromSheet,
-        isNew:     false,
-      });
-    });
-
-    ALL.sort((a,b)=>a.name.localeCompare(b.name));
-    ALL.forEach((s,i)=>s.idx=i+1);
-
-    renderTable(); renderBreakdown(); updateStats();
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('mainContent').style.display='block';
+    // Save to cache
+    try { sessionStorage.setItem('gownCache_v1', JSON.stringify({data: json, ts: Date.now()})); } catch(e) {}
+    processSheetData(json);
 
   } catch(e) {
     document.getElementById('loadingState').innerHTML=
@@ -394,6 +369,54 @@ async function loadData() {
        <span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
     console.error(e);
   }
+}
+
+function processSheetData(json) {
+  const rows = json.table.rows;
+  const cols = json.table.cols;
+
+  const map = {};
+  cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
+  const gv = (r,...names) => {
+    for(const name of names){
+      const i = map[name.toLowerCase()];
+      if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
+    }
+    return '';
+  };
+
+  ALL = [];
+  rows.forEach((r,i)=>{
+    const name = gv(r,'student name');
+    if(!name) return;
+    const sheetStatus = gv(r,'status').toLowerCase();
+    const deliveredFromSheet = sheetStatus === 'delivered' || sheetStatus === 'تم التوصيل';
+    ALL.push({
+      idx:       i+1,
+      id:        gv(r,'sr. no','sr.no') || String(i+1),
+      srno:      gv(r,'sr. no','sr.no') || '',
+      name,
+      studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
+      size:      gv(r,'size'),
+      gender:    gv(r,'gender'),
+      college:   gv(r,'college'),
+      color:     gv(r,'color','colour'),
+      level:     gv(r,'level'),
+      mobile:    gv(r,'mobile number','mobile'),
+      city:      fixCity(gv(r,'city')),
+      honor:     gv(r,'honors','honor','honor rank'),
+      batch:     gv(r,'batch'),
+      deliveredFromSheet,
+      isNew:     false,
+    });
+  });
+
+  ALL.sort((a,b)=>a.name.localeCompare(b.name));
+  ALL.forEach((s,i)=>s.idx=i+1);
+
+  renderTable(); renderBreakdown(); updateStats();
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('mainContent').style.display='block';
 }
 
 function getRowState(id) {
