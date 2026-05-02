@@ -248,6 +248,7 @@ td{padding:8px 14px;vertical-align:middle;}
       <th>Honors</th>
       <th>Status</th>
       <th>Batch</th>
+      <th></th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -356,6 +357,8 @@ async function loadData() {
     rows.forEach((r,i)=>{
       const name = gv(r,'student name');
       if(!name) return;
+      const sheetStatus = gv(r,'status').toLowerCase();
+      const deliveredFromSheet = sheetStatus === 'delivered' || sheetStatus === 'تم التوصيل';
       ALL.push({
         idx:       i+1,
         id:        gv(r,'sr. no','sr.no') || String(i+1),
@@ -371,6 +374,7 @@ async function loadData() {
         city:      fixCity(gv(r,'city')),
         honor:     gv(r,'honors','honor','honor rank'),
         batch:     gv(r,'batch'),
+        deliveredFromSheet,
         isNew:     false,
       });
     });
@@ -390,7 +394,15 @@ async function loadData() {
   }
 }
 
-function getRowState(id) { return state[id] || {}; }
+function getRowState(id) {
+  const st = ALL.find(s => s.id === id);
+  const fb = state[id] || {};
+  // If Firebase has no delivered record yet, use sheet status
+  if(fb.delivered === undefined && st && st.deliveredFromSheet) {
+    return {...fb, delivered: 1};
+  }
+  return fb;
+}
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
@@ -429,7 +441,8 @@ function renderTable() {
       <td class="td-city">${st.city}</td>
       <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
-      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>`;
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>
+      <td><button onclick="window.deleteStudent('${st.id}')" style="padding:3px 8px;border:none;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:.72rem;font-weight:700;cursor:pointer">🗑 Delete</button></td>`;
     tbody.appendChild(tr);
   });
   applyFilters();
@@ -659,6 +672,22 @@ onValue(ref(db, DB_KEY), snapshot => {
   renderFromState(snapshot.val() || {});
 });
 
+function deleteStudent(id) {
+  if(!confirm('Delete this student?')) return;
+  // Remove from ALL array
+  ALL = ALL.filter(st => st.id !== id);
+  // Remove from Firebase state
+  if(state[id]) {
+    delete state[id];
+    set(ref(db, DB_KEY), state);
+  }
+  // Remove row from table
+  const tr = document.getElementById('row-'+id);
+  if(tr) tr.remove();
+  updateStats(); renderBreakdown();
+  showToast('🗑 Student deleted');
+}
+
 window.toggle          = toggle;
 window.applyFilters    = applyFilters;
 window.clearFilters    = clearFilters;
@@ -668,6 +697,7 @@ window.closeModal      = closeModal;
 window.saveNewStudent  = saveNewStudent;
 window.updateField     = updateField;
 window.pushUpdatedSize = pushUpdatedSize;
+window.deleteStudent   = deleteStudent;
 
 loadData();
 </script>
