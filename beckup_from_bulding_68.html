@@ -413,11 +413,12 @@ function processSheetData(json) {
   ALL.sort((a,b)=>a.name.localeCompare(b.name));
   ALL.forEach((s,i)=>s.idx=i+1);
 
-  renderTable(); renderBreakdown(); updateStats();
+  // Show page immediately — don't wait for Firebase
   document.getElementById('loadingState').style.display='none';
   document.getElementById('mainContent').style.display='block';
+  renderTable(); renderBreakdown(); updateStats();
 
-  // Start Firebase sync only after sheet data is ready
+  // Firebase syncs in background
   if(!window._fbListening) {
     window._fbListening = true;
     onValue(ref(db, DB_KEY), snapshot => {
