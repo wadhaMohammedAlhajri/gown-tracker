@@ -1,178 +1,785 @@
 <!DOCTYPE html>
+
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gown Distribution — Fast Version</title>
-
+<title>Gown Distribution — Male Undergraduates</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{font-family:sans-serif;background:#f5f7ff;padding:20px}
-.loading{text-align:center;margin-top:50px}
-.table-wrap{margin-top:20px;background:#fff;border-radius:10px;overflow:auto}
-table{width:100%;border-collapse:collapse}
-th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-.done{opacity:.5;text-decoration:line-through}
-button{cursor:pointer}
+:root{--bg:#f0f4ff;--white:#fff;--border:#e4e9ff;--text:#1a1f4b;--muted:#64748b;--indigo:#4f46e5;--green:#059669;--red:#dc2626;--amber:#d97706;--s1:0 2px 16px rgba(79,70,229,.08);--s2:0 8px 32px rgba(79,70,229,.14);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;background-image:radial-gradient(circle at 10% 5%,rgba(79,70,229,.07) 0%,transparent 45%),radial-gradient(circle at 90% 90%,rgba(6,182,212,.06) 0%,transparent 45%);}
+.topbar{background:var(--white);border-bottom:1.5px solid var(--border);padding:18px 28px;display:flex;align-items:center;gap:16px;box-shadow:var(--s1);position:sticky;top:0;z-index:100;}
+.logo{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-size:1.3rem;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.topbar-titles{flex:1;}.topbar-titles h1{font-size:1.15rem;font-weight:800;}.topbar-titles p{font-size:.78rem;color:var(--muted);margin-top:1px;}
+.reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;color:var(--indigo);cursor:pointer;}
+.reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
+.add-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
+.loading{text-align:center;padding:80px 20px;color:var(--muted);}
+.spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stats{display:flex;gap:14px;flex-wrap:wrap;padding:24px 28px 0;}
+.stat{background:var(--white);border-radius:16px;border:1.5px solid var(--border);padding:16px 20px;flex:1;min-width:120px;max-width:200px;box-shadow:var(--s1);text-align:center;transition:transform .2s,box-shadow .2s;}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--s2);}
+.stat-num{font-size:2rem;font-weight:900;line-height:1;}.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.s-total .stat-num{color:#4f46e5;}.s-done .stat-num{color:#059669;}.s-left .stat-num{color:#dc2626;}.s-pct .stat-num{color:#d97706;}
+.prog-wrap{margin:18px 28px 0;background:var(--white);border-radius:16px;padding:16px 20px;border:1.5px solid var(--border);box-shadow:var(--s1);}
+.prog-head{display:flex;justify-content:space-between;margin-bottom:10px;}
+.prog-head span{font-size:.82rem;font-weight:700;color:var(--muted);}
+.prog-head .chip{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;padding:2px 12px;border-radius:999px;font-weight:800;}
+.bar-bg{background:#e8ebff;border-radius:999px;height:12px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:999px;width:0%;background:linear-gradient(90deg,#4f46e5,#06b6d4);transition:width .5s cubic-bezier(.4,0,.2,1);}
+.breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 28px 0;}
+@media(max-width:1024px){.breakdown{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.breakdown{grid-template-columns:1fr;}}
+.bk-panel{background:var(--white);border-radius:16px;border:1.5px solid var(--border);padding:16px 18px;box-shadow:var(--s1);}
+.bk-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.bk-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4ff;}
+.bk-row:last-child{border-bottom:none;}
+.bk-label{font-size:.82rem;font-weight:600;color:var(--text);flex:1;}
+.bk-bar{height:4px;border-radius:999px;background:#e8ebff;margin-top:4px;}
+.bk-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#06b6d4);}
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.73rem;font-weight:700;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;align-items:center;}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px;}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.85rem;color:var(--text);outline:none;}
+.search-wrap input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--muted);}
+select{padding:9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.82rem;color:var(--text);outline:none;cursor:pointer;}
+select:focus{border-color:#4f46e5;}
+.filter-label{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.filter-counter{padding:8px 28px;display:none;align-items:center;gap:10px;}
+.filter-counter .chip2{background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;padding:5px 16px;border-radius:999px;font-size:.8rem;font-weight:700;}
+.filter-counter .clear-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:999px;background:#fff;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;}
+.filter-counter .clear-btn:hover{background:#eff6ff;border-color:#4f46e5;color:#4f46e5;}
+.table-wrap{margin:18px 28px 40px;background:var(--white);border-radius:20px;border:1.5px solid var(--border);box-shadow:var(--s1);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.84rem;}
+thead th{background:#f8f9ff;padding:12px 14px;text-align:left;font-weight:800;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid #f0f4ff;transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#fafbff;}
+tbody tr.done-row{opacity:.5;}
+tbody tr.done-row td.td-name{text-decoration:line-through;color:var(--muted);}
+tbody tr.new-row{background:#f0fdf4;border-left:3px solid #059669;}
+td{padding:8px 14px;vertical-align:middle;}
+.td-check{width:40px;}
+.td-name{font-weight:700;white-space:nowrap;}
+.td-college{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.td-city{font-family:'Tajawal',sans-serif;font-size:.85rem;}
+.td-mobile{font-size:.78rem;color:var(--muted);font-family:monospace;direction:ltr;}
+.chk{position:relative;display:inline-flex;cursor:pointer;}
+.chk input{position:absolute;opacity:0;width:0;height:0;}
+.box{width:22px;height:22px;border:2px solid #c7d2fe;border-radius:7px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;font-weight:900;transition:all .2s;}
+.chk input:checked+.box{background:linear-gradient(135deg,#4f46e5,#06b6d4);border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3);}
+.size-badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:800;background:#f0f4ff;color:#4f46e5;border:1px solid #c7d2fe;}
+.college-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.color-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:800;}
+.honor-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:800;background:#fef3c7;color:#d97706;border:1px solid #fde68a;}
+.status-delivered{color:#059669;font-weight:700;font-size:.75rem;}
+.status-pending{color:#dc2626;font-weight:700;font-size:.75rem;}
+.edit-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.8rem;width:80px;background:#f8f9ff;color:var(--text);outline:none;}
+.edit-input:focus{border-color:#4f46e5;background:#fff;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:20px;padding:28px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal h3{font-size:1rem;font-weight:800;margin-bottom:18px;}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.modal label{font-size:.75rem;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
+.modal input,.modal select{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;outline:none;}
+.modal input:focus,.modal select:focus{border-color:#4f46e5;}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;}
+.btn-cancel{padding:9px 20px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
+.btn-save{padding:9px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1f4b;color:#fff;padding:10px 20px;border-radius:10px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;}
+.toast.show{opacity:1;}
+@media(max-width:768px){.topbar,.stats,.filters,.legend,.prog-wrap,.breakdown,.table-wrap,.filter-counter{padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}.stats{padding:14px 14px 0;}.td-college,.td-mobile,.td-city{display:none;}}
 </style>
 </head>
-
 <body>
 
-<h2>🎓 Gown Distribution (Fast)</h2>
+<div id="toast" class="toast"></div>
 
-<div id="loading" class="loading">⏳ Loading...</div>
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>➕ Add New Student</h3>
+    <div class="modal-grid">
+      <div><label>Sr. No</label><input id="m_srno" placeholder="e.g. 901"></div>
+      <div><label>Student Name *</label><input id="m_name" placeholder="Full name"></div>
+      <div><label>Student ID</label><input id="m_id" placeholder="202XXXXXX"></div>
+      <div><label>Size</label><input id="m_size" placeholder='e.g. 30"'></div>
+      <div><label>Gender</label><input id="m_gender" placeholder="Male/Female"></div>
+      <div><label>College</label><input id="m_college" placeholder="College name"></div>
+      <div><label>Color</label>
+        <select id="m_color"><option value="">—</option>
+          <option>Blue</option><option>Brown</option><option>Gray</option>
+          <option>Orange</option><option>Red</option><option>Yellow</option>
+        </select>
+      </div>
+      <div><label>Level</label><input id="m_level" placeholder="e.g. Bachelor"></div>
+      <div><label>Mobile</label><input id="m_mobile" placeholder="5XXXXXXXX"></div>
+      <div><label>City</label><input id="m_city" placeholder="City"></div>
+      <div><label>Honor</label>
+        <select id="m_honor"><option value="">—</option>
+          <option>1</option><option>2</option><option>3</option>
+        </select>
+      </div>
+      <div><label>Batch</label>
+        <select id="m_batch"><option value="">—</option>
+          <option>Honor Outside Region - Ready Packages</option>
+          <option>Floward Return</option>
+          <option>Remaining Honor Students</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-save" onclick="window.saveNewStudent()">Add Student</button>
+    </div>
+  </div>
+</div>
 
-<div id="content" style="display:none">
-<div id="stats"></div>
+<div class="topbar">
+  <div class="logo">🎓</div>
+  <div class="topbar-titles">
+    <h1>Male Undergraduate Students — Gown Distribution</h1>
+    <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
+  </div>
+  <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
+  <button class="reload-btn" onclick="window.loadData(true)">🔄 Refresh</button>
+</div>
+
+<div id="loadingState" class="loading">
+  <div class="spinner"></div>
+  <p>Loading students from Google Sheets...</p>
+</div>
+
+<div id="mainContent" style="display:none">
+<div class="stats">
+  <div class="stat s-total"><div class="stat-num" id="cTotal">0</div><div class="stat-lbl">Total Students</div></div>
+  <div class="stat s-done"><div class="stat-num" id="cDone">0</div><div class="stat-lbl">Delivered ✅</div></div>
+  <div class="stat s-left"><div class="stat-num" id="cLeft">0</div><div class="stat-lbl">Remaining ⏳</div></div>
+  <div class="stat s-pct"><div class="stat-num" id="cPct">0%</div><div class="stat-lbl">Progress 🔥</div></div>
+</div>
+<div class="prog-wrap">
+  <div class="prog-head"><span>Overall Progress</span><span class="chip" id="progChip">0 / 0</span></div>
+  <div class="bar-bg"><div class="bar-fill" id="mainBar"></div></div>
+</div>
+<div class="breakdown">
+  <div class="bk-panel"><div class="bk-title">📏 By Size</div><div id="bkSize"></div></div>
+  <div class="bk-panel"><div class="bk-title">🏫 By College</div><div id="bkCollege"></div></div>
+  <div class="bk-panel"><div class="bk-title">🏙️ By City</div><div id="bkCity"></div></div>
+  <div class="bk-panel"><div class="bk-title">📦 By Batch</div><div id="bkBatch"></div></div>
+</div>
+<div class="legend" style="margin-top:14px;">
+  <span style="font-size:.73rem;font-weight:800;color:var(--muted);">College Colors:</span>
+  <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>Chemicals & Materials — Yellow</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#6b7280"></div>Computing & Mathematics — Gray</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#ea580c"></div>Engineering & Physics — Orange</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>Petroleum & Geo Sciences — Red</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2563eb"></div>Business School — Blue</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#92400e"></div>Design & Built Env. — Brown</div>
+</div>
+<div class="filters">
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search by name or KFUPM ID..." oninput="applyFilters()" id="searchInput"></div>
+  <span class="filter-label">College:</span>
+  <select onchange="applyFilters()" id="filterCollege">
+    <option value="">All Colleges</option>
+    <option>Chemicals and Materials</option><option>Computing & Mathematics</option>
+    <option>Design & Built Environment</option><option>Engineering & Physics</option>
+    <option>KFUPM Business School</option><option>Petroleum Engg. & Geo Sciences</option>
+  </select>
+  <span class="filter-label">Size:</span>
+  <select onchange="applyFilters()" id="filterSize">
+    <option value="">All Sizes</option>
+    <option>27"</option><option>28"</option><option>29"</option><option>30"</option>
+    <option>31"</option><option>32"</option><option>33"</option><option>34"</option>
+  </select>
+  <span class="filter-label">Color:</span>
+  <select onchange="applyFilters()" id="filterColor">
+    <option value="">All Colors</option>
+    <option>Blue</option><option>Brown</option><option>Gray</option>
+    <option>Orange</option><option>Red</option><option>Yellow</option>
+  </select>
+  <span class="filter-label">City:</span>
+  <select onchange="applyFilters()" id="filterCity">
+    <option value="">All Cities</option>
+    <option>KFUPM</option><option>الاحساء</option><option>الجبيل</option>
+    <option>الخبر</option><option>الدمام</option><option>الظهران</option>
+    <option>القطيف</option><option>بقيق</option><option>رأس تنورة</option><option>سيهات</option>
+  </select>
+  <span class="filter-label">Batch:</span>
+  <select onchange="applyFilters()" id="filterBatch">
+    <option value="">All Batches</option>
+    <option>Honor Outside Region - Ready Packages</option>
+    <option>Floward Return</option>
+    <option>Remaining Honor Students</option>
+  </select>
+  <select onchange="applyFilters()" id="filterStatus">
+    <option value="">All</option>
+    <option value="pending">Not Delivered</option>
+    <option value="done">Delivered</option>
+  </select>
+</div>
+
+<div class="filter-counter" id="filterCounter">
+  <span class="chip2">🔍 Showing <span id="counterNum">0</span> students</span>
+  <button class="clear-btn" onclick="clearFilters()">✕ Clear filters</button>
+</div>
 
 <div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>✔</th>
-<th>Name</th>
-<th>ID</th>
-<th>Size</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
+  <table>
+    <thead><tr>
+      <th style="width:40px"></th>
+      <th style="width:55px">Sr. No</th>
+      <th style="min-width:180px">Student Name</th>
+      <th>Student ID</th>
+      <th>Size</th>
+      <th style="min-width:180px">Updated Size</th>
+      <th>Gender</th>
+      <th>College</th>
+      <th>Color</th>
+      <th>Level</th>
+      <th>Mobile Number</th>
+      <th>City</th>
+      <th>Honors</th>
+      <th>Status</th>
+      <th>Batch</th>
+      <th style="min-width:140px">Comments</th>
+      <th></th>
+    </tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty" id="emptyState" style="display:none"><p>🔍 No students match your filter.</p></div>
 </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-/* 🔥 Firebase */
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyBltfac-apGVD-PdfASqveMA_j77CoPhwg",
   authDomain: "female-undergraduate-students.firebaseapp.com",
   databaseURL: "https://female-undergraduate-students-default-rtdb.firebaseio.com",
+  projectId: "female-undergraduate-students",
+  storageBucket: "female-undergraduate-students.firebasestorage.app",
+  messagingSenderId: "481168743771",
+  appId: "1:481168743771:web:b5d61105a9018f95d38e7e"
 };
+
+const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
+const SHEET_NAME = 'system list';
+const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
+const DB_KEY     = 'gownMaleChecklist_v2';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBRHs7mIzT-wWnWOV4HdQ-xHR9zdXwGv-zJRMKcP6Aw5Ad0vNVegs9r2stBp7c2XDcnw/exec';
+
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-/* 🚀 Fast Sheet API */
-const SHEET_ID = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
-const SHEET_NAME = 'system list';
-const SHEET_URL = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_NAME)}`;
-
-let ALL = [];
+let ALL   = [];
 let state = {};
 
-/* 🚀 Load Data */
-async function loadData(){
-  document.getElementById('loading').style.display='block';
+const COLOR_STYLE = {
+  Yellow:['#fef3c7','#d97706'], Gray:['#f3f4f6','#6b7280'],
+  Orange:['#fff7ed','#ea580c'], Red:['#fef2f2','#dc2626'],
+  Blue:['#eff6ff','#2563eb'],   Brown:['#fdf6ec','#92400e'],
+};
 
-  const CACHE_KEY='cache_v2';
-  const TTL=15*60*1000;
+const savePart = (id, data) => update(ref(db, `${DB_KEY}/${id}`), data);
 
-  const cached=sessionStorage.getItem(CACHE_KEY);
-  if(cached){
-    const {data,ts}=JSON.parse(cached);
-    if(Date.now()-ts<TTL){
-      ALL=data;
-      afterLoad();
-      return;
+// Toast notification
+function showToast(msg, success=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = success ? '#059669' : '#dc2626';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// Write to Google Sheet via Apps Script
+async function writeToSheet(payload) {
+  if(!APPS_SCRIPT_URL) return;
+  const body = JSON.stringify({...payload, sheetName: SHEET_NAME});
+  try {
+    // Try POST first
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body,
+    });
+    const json = await res.json();
+    if(json.success) showToast('✅ Sheet updated!');
+    else showToast('⚠️ '+json.error, false);
+  } catch(e) {
+    // Fallback to GET (no-cors workaround)
+    try {
+      await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(body), {method:'GET', mode:'no-cors'});
+      showToast('✅ Sheet updated!');
+    } catch(e2) {
+      console.warn('Sheet write failed:', e2);
+      showToast('⚠️ Sheet update failed', false);
     }
   }
-
-  const res=await fetch(SHEET_URL);
-  const data=await res.json();
-
-  ALL=data
-    .filter(r=>r['Student Name'])
-    .map((r,i)=>({
-      id:r['Sr. No']||String(i),
-      name:r['Student Name'],
-      studentId:r['Student ID']||'',
-      size:r['Size']||'',
-      delivered:(r['Status']||'').toLowerCase()==='delivered'
-    }));
-
-  sessionStorage.setItem(CACHE_KEY,JSON.stringify({data:ALL,ts:Date.now()}));
-
-  afterLoad();
 }
 
-/* 🚀 After Load */
-function afterLoad(){
-  requestAnimationFrame(()=>{
-    render();
-    updateStats();
+const fixCity = c => {
+  if(!c) return '';
+  c = c.trim();
+  if(c==='رأس تنورة'||c==='راس تنورة') return 'رأس تنورة';
+  if(c==='الأحساء'||c==='الاحساء')     return 'الاحساء';
+  return c;
+};
+
+async function loadData(forceRefresh=false) {
+  document.getElementById('loadingState').style.display='block';
+  document.getElementById('mainContent').style.display='none';
+
+  // Try cache first (valid for 5 minutes)
+  const CACHE_KEY = 'gownCache_v1';
+  const CACHE_TTL = 5 * 60 * 1000;
+  if(!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if(cached) {
+        const {data, ts} = JSON.parse(cached);
+        if(Date.now() - ts < CACHE_TTL) {
+          processSheetData(data);
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const res  = await fetch(SHEET_URL);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/setResponse\(([\s\S]*)\)/)[1]);
+    // Save to cache
+    try { sessionStorage.setItem('gownCache_v1', JSON.stringify({data: json, ts: Date.now()})); } catch(e) {}
+    processSheetData(json);
+
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML=
+      `<div style="color:#dc2626;font-weight:700;font-size:1rem;">❌ Failed to load data.<br>
+       <span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
+    console.error(e);
+  }
+}
+
+function processSheetData(json) {
+  const rows = json.table.rows;
+  const cols = json.table.cols;
+
+  const map = {};
+  cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
+  const gv = (r,...names) => {
+    for(const name of names){
+      const i = map[name.toLowerCase()];
+      if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
+    }
+    return '';
+  };
+
+  ALL = [];
+  rows.forEach((r,i)=>{
+    const name = gv(r,'student name');
+    if(!name) return;
+    const sheetStatus = gv(r,'status').toLowerCase();
+    const deliveredFromSheet = sheetStatus === 'delivered' || sheetStatus === 'تم التوصيل';
+    ALL.push({
+      idx:       i+1,
+      id:        gv(r,'sr. no','sr.no') || String(i+1),
+      srno:      gv(r,'sr. no','sr.no') || '',
+      name,
+      studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
+      size:      gv(r,'size'),
+      gender:    gv(r,'gender'),
+      college:   gv(r,'college'),
+      color:     gv(r,'color','colour'),
+      level:     gv(r,'level'),
+      mobile:    gv(r,'mobile number','mobile'),
+      city:      fixCity(gv(r,'city')),
+      honor:     gv(r,'honors','honor','honor rank'),
+      batch:     gv(r,'batch'),
+      deliveredFromSheet,
+      isNew:     false,
+    });
   });
 
-  document.getElementById('loading').style.display='none';
-  document.getElementById('content').style.display='block';
+  ALL.sort((a,b)=>a.name.localeCompare(b.name));
+  ALL.forEach((s,i)=>s.idx=i+1);
+
+  renderTable(); renderBreakdown(); updateStats();
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('mainContent').style.display='block';
+
+  // Start Firebase sync only after sheet data is ready
+  if(!window._fbListening) {
+    window._fbListening = true;
+    onValue(ref(db, DB_KEY), snapshot => {
+      renderFromState(snapshot.val() || {});
+    });
+  }
 }
 
-/* 🚀 Render */
-function render(){
-  const tb=document.getElementById('tbody');
-  tb.innerHTML='';
-
-  ALL.forEach(st=>{
-    const tr=document.createElement('tr');
-    tr.id='row-'+st.id;
-
-    const done=state[st.id]?.delivered ?? st.delivered;
-
-    if(done) tr.classList.add('done');
-
-    tr.innerHTML=`
-    <td><input type="checkbox" ${done?'checked':''}
-      onchange="toggle('${st.id}',this.checked)"></td>
-    <td>${st.name}</td>
-    <td>${st.studentId}</td>
-    <td>${st.size}</td>
-    <td>${done?'✅':'⏳'}</td>
-    `;
-
-    tb.appendChild(tr);
-  });
+function getRowState(id) {
+  const st = ALL.find(s => s.id === id);
+  const fb = state[id] || {};
+  // If Firebase has no delivered record yet, use sheet status
+  if(fb.delivered === undefined && st && st.deliveredFromSheet) {
+    return {...fb, delivered: 1};
+  }
+  return fb;
 }
 
-/* 🚀 Stats */
-function updateStats(){
-  const total=ALL.length;
-  const done=ALL.filter(s=>state[s.id]?.delivered || s.delivered).length;
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  ALL.forEach(st => {
+    const rs = getRowState(st.id);
+    const delivered  = !!rs.delivered;
+    const updatedSize = rs.updatedSize || '';
+    const isNew = st.isNew || !!rs.isNew;
+    const batch = rs.batch || st.batch || '';
 
-  document.getElementById('stats').innerHTML=
-    `Total: ${total} | Done: ${done}`;
-}
+    const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
+    const tr = document.createElement('tr');
+    tr.id = 'row-'+st.id;
+    tr.dataset.id    = st.id;
+    tr.dataset.sid   = st.studentId||'';
+    tr.dataset.batch = batch;
+    if(delivered) tr.classList.add('done-row');
+    if(isNew)     tr.classList.add('new-row');
 
-/* 🚀 Toggle */
-window.toggle=function(id,val){
-  if(!state[id]) state[id]={};
-  state[id].delivered=val?1:0;
+    tr.innerHTML = `
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
+      <td style="font-size:.72rem;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center">${st.srno}</td>
+      <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800"> NEW</span>':''}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
+      <td><span class="size-badge">${st.size}</span></td>
+      <td style="white-space:nowrap">
+        <input class="edit-input" id="us-${st.id}" value="${updatedSize}" placeholder="New size...">
+        <button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="padding:4px 10px;border:none;border-radius:6px;background:#4f46e5;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;margin-right:2px">✓ Update</button>
+      </td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
+      <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
+      <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.level||'—'}</td>
+      <td class="td-mobile">${st.mobile||'—'}</td>
+      <td class="td-city">${st.city}</td>
+      <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
+      <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>
+      <td><textarea class="comment-input" rows="1" placeholder="Add comment..." onchange="window.updateField('${st.id}','comment',this.value)">${rs.comment||''}</textarea></td>
 
-  update(ref(db,'gown/'+id),{delivered:state[id].delivered});
+```
+  <td><button onclick="window.deleteStudent('${st.id}')" style="padding:3px 8px;border:none;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:.72rem;font-weight:700;cursor:pointer">🗑 Delete</button></td>`;
+tbody.appendChild(tr);
+```
 
-  const tr=document.getElementById('row-'+id);
-  tr.classList.toggle('done',val);
-
-  updateStats();
-}
-
-/* 🚀 Firebase Sync (خفيف) */
-onValue(ref(db,'gown'),snap=>{
-  state=snap.val()||{};
-  updateStats();
-
-  ALL.forEach(st=>{
-    const tr=document.getElementById('row-'+st.id);
-    if(!tr) return;
-
-    const done=state[st.id]?.delivered ?? st.delivered;
-
-    tr.classList.toggle('done',done);
-
-    const cb=tr.querySelector('input');
-    cb.checked=done;
-  });
 });
+applyFilters();
+}
+
+function renderBreakdown() {
+const countBy = key => {
+const m = {};
+ALL.forEach(st => {
+const v = (key===‘batch’ ? (getRowState(st.id).batch||st.batch) : st[key]) || ‘—’;
+if(!m[v]) m[v] = {total:0, handed:0};
+m[v].total++;
+if(getRowState(st.id).delivered) m[v].handed++;
+});
+return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
+};
+const panel = (id, entries) => {
+document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => ` <div class="bk-row"> <div style="flex:1"> <div class="bk-label">${l}</div> <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div> </div> <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700"> <span style="color:#059669">${handed}</span> <span style="color:var(--muted)"> / ${total}</span> </div> </div>`).join(’’);
+};
+panel(‘bkSize’,    countBy(‘size’));
+panel(‘bkCollege’, countBy(‘college’));
+panel(‘bkCity’,    countBy(‘city’));
+panel(‘bkBatch’,   countBy(‘batch’));
+}
+
+function updateStats() {
+const total = ALL.length;
+const done  = ALL.filter(st=>getRowState(st.id).delivered).length;
+const left  = total-done;
+const pct   = total ? Math.round(done/total*100) : 0;
+document.getElementById(‘cTotal’).textContent = total;
+document.getElementById(‘cDone’).textContent  = done;
+document.getElementById(‘cLeft’).textContent  = left;
+document.getElementById(‘cPct’).textContent   = pct+’%’;
+document.getElementById(‘progChip’).textContent = done+’ / ‘+total;
+document.getElementById(‘mainBar’).style.width  = pct+’%’;
+}
+
+function toggle(id) {
+const cb = document.getElementById(‘cb-’+id);
+if(!cb) return;
+if(!state[id]) state[id] = {};
+state[id].delivered = cb.checked ? 1 : 0;
+savePart(id, {delivered: cb.checked ? 1 : 0});
+// Update sheet status
+const srno = ALL.find(st=>st.id===id)?.srno;
+if(srno) writeToSheet({action:‘updateStatus’, srno, status: cb.checked?‘Delivered’:‘Not Delivered’});
+const tr = document.getElementById(‘row-’+id);
+tr.classList.toggle(‘done-row’, cb.checked);
+cb.nextElementSibling.textContent = cb.checked ? ‘✓’ : ‘’;
+const statusEl = tr.querySelector(’.status-delivered, .status-pending’);
+if(statusEl){
+statusEl.className = cb.checked ? ‘status-delivered’ : ‘status-pending’;
+statusEl.textContent = cb.checked ? ‘✅ Delivered’ : ‘⏳ Not Delivered’;
+}
+updateStats(); renderBreakdown();
+}
+
+function updateField(id, field, value) {
+if(!state[id]) state[id] = {};
+state[id][field] = value;
+savePart(id, {[field]: value});
+}
+
+function pushUpdatedSize(id, srno) {
+const input = document.getElementById(‘us-’+id);
+if(!input) return;
+const val = input.value.trim();
+if(!val){ showToast(‘Please enter a size’, false); return; }
+updateField(id, ‘updatedSize’, val);
+writeToSheet({action:‘updateSize’, srno, updatedSize: val});
+input.style.borderColor = ‘#059669’;
+setTimeout(()=>{ if(input) input.style.borderColor=’’; }, 2000);
+}
+
+function applyFilters() {
+const q   = document.getElementById(‘searchInput’).value.toLowerCase();
+const col = document.getElementById(‘filterCollege’).value;
+const sz  = document.getElementById(‘filterSize’).value;
+const clr = document.getElementById(‘filterColor’).value;
+const ct  = document.getElementById(‘filterCity’).value;
+const bat = document.getElementById(‘filterBatch’).value;
+const st  = document.getElementById(‘filterStatus’).value;
+let visible = 0;
+document.querySelectorAll(’#tableBody tr’).forEach(tr => {
+const name    = tr.querySelector(’.td-name’).textContent.toLowerCase();
+const sid     = (tr.dataset.sid||’’).toLowerCase();
+const college = tr.querySelector(’.td-college’).textContent.trim();
+const size    = tr.querySelector(’.size-badge’)?.textContent.trim()||’’;
+const color   = tr.querySelector(’.color-pill’)?.textContent.trim()||’’;
+const city    = tr.querySelector(’.td-city’).textContent.trim();
+const batch   = tr.dataset.batch||’’;
+const id      = tr.dataset.id;
+const done    = !!getRowState(id).delivered;
+const show =
+(!q   || name.includes(q) || sid.includes(q)) &&
+(!col || college.includes(col)) &&
+(!sz  || size === sz) &&
+(!clr || color === clr) &&
+(!ct  || city === ct) &&
+(!bat || batch === bat) &&
+(!st  || (st===‘done’ ? done : !done));
+tr.style.display = show ? ‘’ : ‘none’;
+if(show) visible++;
+});
+document.getElementById(‘emptyState’).style.display = visible===0 ? ‘block’ : ‘none’;
+const isFiltered = q||col||sz||clr||ct||bat||st;
+const counter = document.getElementById(‘filterCounter’);
+if(isFiltered){
+document.getElementById(‘counterNum’).textContent = visible;
+counter.style.display = ‘flex’;
+} else {
+counter.style.display = ‘none’;
+}
+}
+
+function clearFilters() {
+[‘searchInput’,‘filterCollege’,‘filterSize’,‘filterColor’,‘filterCity’,‘filterBatch’,‘filterStatus’]
+.forEach(id => { const el=document.getElementById(id); if(el) el.value=’’; });
+applyFilters();
+}
+
+let _tableReady = false;
+
+function renderFromState(s) {
+state = s || {};
+
+// Merge new students from Firebase into ALL
+let changed = false;
+Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
+if(!ALL.find(st=>st.id===id)){
+ALL.push({
+idx:0, id, srno:v.srno||’’, name:v.name||’’,
+studentId:v.studentId||’’, size:v.size||’’,
+gender:v.gender||’’, college:v.college||’’,
+color:v.color||’’, level:v.level||’’,
+mobile:v.mobile||’’, city:v.city||’’,
+honor:v.honor||’’, batch:v.batch||’’,
+isNew:true,
+});
+changed = true;
+}
+});
+
+if(!_tableReady || changed) {
+// First load or new student added — full re-render
+if(changed){ ALL.sort((a,b)=>a.name.localeCompare(b.name)); ALL.forEach((s,i)=>s.idx=i+1); }
+renderTable(); renderBreakdown(); updateStats();
+_tableReady = true;
+return;
+}
+
+// Subsequent syncs — only update existing rows without re-rendering
+ALL.forEach(st => {
+const rs = state[st.id] || {};
+const delivered = !!rs.delivered;
+const tr = document.getElementById(‘row-’+st.id);
+if(!tr) return;
+
+```
+// Update delivered state
+const cb = document.getElementById('cb-'+st.id);
+if(cb) { cb.checked = delivered; cb.nextElementSibling.textContent = delivered?'✓':''; }
+tr.classList.toggle('done-row', delivered);
+tr.dataset.batch = rs.batch || st.batch || '';
+
+// Update status cell
+const statusEl = tr.querySelector('.status-delivered, .status-pending');
+if(statusEl){
+  statusEl.className = delivered ? 'status-delivered' : 'status-pending';
+  statusEl.textContent = delivered ? '✅ Delivered' : '⏳ Not Delivered';
+}
+
+// Update updatedSize input
+const usInput = document.getElementById('us-'+st.id);
+if(usInput && rs.updatedSize && usInput.value !== rs.updatedSize){
+  usInput.value = rs.updatedSize;
+}
+```
+
+});
+
+renderBreakdown(); updateStats();
+}
+
+function openModal(){ document.getElementById(‘modalBg’).classList.add(‘open’); }
+function closeModal(){ document.getElementById(‘modalBg’).classList.remove(‘open’); }
+
+function saveNewStudent() {
+const name = document.getElementById(‘m_name’).value.trim();
+if(!name){ showToast(‘Student Name is required’, false); return; }
+const id = ‘new_’+Date.now();
+const newSt = {
+isNew:1,
+srno:    document.getElementById(‘m_srno’).value.trim(),
+name,
+studentId: document.getElementById(‘m_id’).value.trim(),
+size:    document.getElementById(‘m_size’).value.trim(),
+gender:  document.getElementById(‘m_gender’).value.trim(),
+college: document.getElementById(‘m_college’).value.trim(),
+color:   document.getElementById(‘m_color’).value,
+level:   document.getElementById(‘m_level’).value.trim(),
+mobile:  document.getElementById(‘m_mobile’).value.trim(),
+city:    document.getElementById(‘m_city’).value.trim(),
+honor:   document.getElementById(‘m_honor’).value,
+batch:   document.getElementById(‘m_batch’).value,
+};
+if(!state[id]) state[id]={};
+Object.assign(state[id], newSt);
+savePart(id, newSt);
+// Write to sheet
+writeToSheet({action:‘addStudent’, …newSt});
+closeModal();
+[‘m_srno’,‘m_name’,‘m_id’,‘m_size’,‘m_gender’,‘m_college’,‘m_level’,‘m_mobile’,‘m_city’]
+.forEach(f=>{ const el=document.getElementById(f); if(el) el.value=’’; });
+[‘m_color’,‘m_honor’,‘m_batch’].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=’’; });
+}
+
+function deleteStudent(id) {
+if(!confirm(‘Delete this student?’)) return;
+// Remove from ALL array
+ALL = ALL.filter(st => st.id !== id);
+// Remove from Firebase state
+if(state[id]) {
+delete state[id];
+set(ref(db, DB_KEY), state);
+}
+// Remove row from table
+const tr = document.getElementById(‘row-’+id);
+if(tr) tr.remove();
+updateStats(); renderBreakdown();
+showToast(‘🗑 Student deleted’);
+}
+
+function exportExcel() {
+// Build data array
+const headers = [
+‘Sr. No’,‘Student Name’,‘Student ID’,‘Size’,‘Updated Size’,
+‘Gender’,‘College’,‘Color’,‘Level’,‘Mobile Number’,‘City’,
+‘Honors’,‘Status’,‘Batch’,‘Comments’
+];
+
+const rows = ALL.map(st => {
+const rs = getRowState(st.id);
+const delivered = !!rs.delivered || st.deliveredFromSheet;
+return [
+st.srno,
+st.name,
+st.studentId||’’,
+st.size,
+rs.updatedSize||’’,
+st.gender||’’,
+st.college,
+st.color,
+st.level||’’,
+st.mobile||’’,
+st.city,
+st.honor||’’,
+delivered ? ‘Delivered’ : ‘Not Delivered’,
+rs.batch||st.batch||’’,
+rs.comment||’’
+];
+});
+
+// Build CSV
+const escape = v => {
+const s = String(v||’’);
+return s.includes(’,’) || s.includes(’”’) || s.includes(’
+‘)
+? ‘”’ + s.replace(/”/g,’””’) + ‘”’
+: s;
+};
+
+const csv = [headers, …rows]
+.map(row => row.map(escape).join(’,’))
+.join(’
+’);
+
+// Add BOM for Excel Arabic support
+const bom = ‘﻿’;
+const blob = new Blob([bom + csv], {type:‘text/csv;charset=utf-8’});
+const url  = URL.createObjectURL(blob);
+const a    = document.createElement(‘a’);
+a.href     = url;
+a.download = ‘gown-distribution-’ + new Date().toISOString().slice(0,10) + ‘.csv’;
+a.click();
+URL.revokeObjectURL(url);
+showToast(‘✅ File downloaded!’);
+}
+
+window.toggle          = toggle;
+window.applyFilters    = applyFilters;
+window.clearFilters    = clearFilters;
+window.loadData        = loadData;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.saveNewStudent  = saveNewStudent;
+window.updateField     = updateField;
+window.pushUpdatedSize = pushUpdatedSize;
+window.deleteStudent   = deleteStudent;
 
 loadData();
 </script>
