@@ -298,18 +298,29 @@ function showToast(msg, success=true) {
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-// Write to Google Sheet via Apps Script (no-cors)
+// Write to Google Sheet via Apps Script
 async function writeToSheet(payload) {
   if(!APPS_SCRIPT_URL) return;
+  const body = JSON.stringify({...payload, sheetName: SHEET_NAME});
   try {
-    // Use no-cors since Apps Script doesn't return CORS headers for cross-origin
-    await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({...payload, sheetName: SHEET_NAME})), {
-      method: 'GET',
+    // Try POST first
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body,
     });
-    showToast('✅ Sheet updated!');
+    const json = await res.json();
+    if(json.success) showToast('✅ Sheet updated!');
+    else showToast('⚠️ '+json.error, false);
   } catch(e) {
-    console.warn('Sheet write failed:', e);
-    showToast('⚠️ Saved locally, sheet update failed', false);
+    // Fallback to GET (no-cors workaround)
+    try {
+      await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(body), {method:'GET', mode:'no-cors'});
+      showToast('✅ Sheet updated!');
+    } catch(e2) {
+      console.warn('Sheet write failed:', e2);
+      showToast('⚠️ Sheet update failed', false);
+    }
   }
 }
 
@@ -473,6 +484,9 @@ function toggle(id) {
   if(!state[id]) state[id] = {};
   state[id].delivered = cb.checked ? 1 : 0;
   savePart(id, {delivered: cb.checked ? 1 : 0});
+  // Update sheet status
+  const srno = ALL.find(st=>st.id===id)?.srno;
+  if(srno) writeToSheet({action:'updateStatus', srno, status: cb.checked?'Delivered':'Not Delivered'});
   const tr = document.getElementById('row-'+id);
   tr.classList.toggle('done-row', cb.checked);
   cb.nextElementSibling.textContent = cb.checked ? '✓' : '';
