@@ -149,6 +149,7 @@ td{padding:8px 14px;vertical-align:middle;}
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
   <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
+  <button class="reload-btn" onclick="window.exportExcel()">📥 Export Excel</button>
   <button class="reload-btn" onclick="window.loadData()">🔄 Refresh</button>
 </div>
 
@@ -248,6 +249,7 @@ td{padding:8px 14px;vertical-align:middle;}
       <th>Honors</th>
       <th>Status</th>
       <th>Batch</th>
+      <th style="min-width:140px">Comments</th>
       <th></th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
@@ -442,250 +444,304 @@ function renderTable() {
       <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
       <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>
-      <td><button onclick="window.deleteStudent('${st.id}')" style="padding:3px 8px;border:none;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:.72rem;font-weight:700;cursor:pointer">🗑 Delete</button></td>`;
-    tbody.appendChild(tr);
-  });
-  applyFilters();
+      <td><textarea class="comment-input" rows="1" placeholder="Add comment..." onchange="window.updateField('${st.id}','comment',this.value)">${rs.comment||''}</textarea></td>
+
+```
+  <td><button onclick="window.deleteStudent('${st.id}')" style="padding:3px 8px;border:none;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:.72rem;font-weight:700;cursor:pointer">🗑 Delete</button></td>`;
+tbody.appendChild(tr);
+```
+
+});
+applyFilters();
 }
 
 function renderBreakdown() {
-  const countBy = key => {
-    const m = {};
-    ALL.forEach(st => {
-      const v = (key==='batch' ? (getRowState(st.id).batch||st.batch) : st[key]) || '—';
-      if(!m[v]) m[v] = {total:0, handed:0};
-      m[v].total++;
-      if(getRowState(st.id).delivered) m[v].handed++;
-    });
-    return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
-  };
-  const panel = (id, entries) => {
-    document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => `
-      <div class="bk-row">
-        <div style="flex:1">
-          <div class="bk-label">${l}</div>
-          <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div>
-        </div>
-        <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700">
-          <span style="color:#059669">${handed}</span>
-          <span style="color:var(--muted)"> / ${total}</span>
-        </div>
-      </div>`).join('');
-  };
-  panel('bkSize',    countBy('size'));
-  panel('bkCollege', countBy('college'));
-  panel('bkCity',    countBy('city'));
-  panel('bkBatch',   countBy('batch'));
+const countBy = key => {
+const m = {};
+ALL.forEach(st => {
+const v = (key===‘batch’ ? (getRowState(st.id).batch||st.batch) : st[key]) || ‘—’;
+if(!m[v]) m[v] = {total:0, handed:0};
+m[v].total++;
+if(getRowState(st.id).delivered) m[v].handed++;
+});
+return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
+};
+const panel = (id, entries) => {
+document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => ` <div class="bk-row"> <div style="flex:1"> <div class="bk-label">${l}</div> <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div> </div> <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700"> <span style="color:#059669">${handed}</span> <span style="color:var(--muted)"> / ${total}</span> </div> </div>`).join(’’);
+};
+panel(‘bkSize’,    countBy(‘size’));
+panel(‘bkCollege’, countBy(‘college’));
+panel(‘bkCity’,    countBy(‘city’));
+panel(‘bkBatch’,   countBy(‘batch’));
 }
 
 function updateStats() {
-  const total = ALL.length;
-  const done  = ALL.filter(st=>getRowState(st.id).delivered).length;
-  const left  = total-done;
-  const pct   = total ? Math.round(done/total*100) : 0;
-  document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent  = done;
-  document.getElementById('cLeft').textContent  = left;
-  document.getElementById('cPct').textContent   = pct+'%';
-  document.getElementById('progChip').textContent = done+' / '+total;
-  document.getElementById('mainBar').style.width  = pct+'%';
+const total = ALL.length;
+const done  = ALL.filter(st=>getRowState(st.id).delivered).length;
+const left  = total-done;
+const pct   = total ? Math.round(done/total*100) : 0;
+document.getElementById(‘cTotal’).textContent = total;
+document.getElementById(‘cDone’).textContent  = done;
+document.getElementById(‘cLeft’).textContent  = left;
+document.getElementById(‘cPct’).textContent   = pct+’%’;
+document.getElementById(‘progChip’).textContent = done+’ / ‘+total;
+document.getElementById(‘mainBar’).style.width  = pct+’%’;
 }
 
 function toggle(id) {
-  const cb = document.getElementById('cb-'+id);
-  if(!cb) return;
-  if(!state[id]) state[id] = {};
-  state[id].delivered = cb.checked ? 1 : 0;
-  savePart(id, {delivered: cb.checked ? 1 : 0});
-  // Update sheet status
-  const srno = ALL.find(st=>st.id===id)?.srno;
-  if(srno) writeToSheet({action:'updateStatus', srno, status: cb.checked?'Delivered':'Not Delivered'});
-  const tr = document.getElementById('row-'+id);
-  tr.classList.toggle('done-row', cb.checked);
-  cb.nextElementSibling.textContent = cb.checked ? '✓' : '';
-  const statusEl = tr.querySelector('.status-delivered, .status-pending');
-  if(statusEl){
-    statusEl.className = cb.checked ? 'status-delivered' : 'status-pending';
-    statusEl.textContent = cb.checked ? '✅ Delivered' : '⏳ Not Delivered';
-  }
-  updateStats(); renderBreakdown();
+const cb = document.getElementById(‘cb-’+id);
+if(!cb) return;
+if(!state[id]) state[id] = {};
+state[id].delivered = cb.checked ? 1 : 0;
+savePart(id, {delivered: cb.checked ? 1 : 0});
+// Update sheet status
+const srno = ALL.find(st=>st.id===id)?.srno;
+if(srno) writeToSheet({action:‘updateStatus’, srno, status: cb.checked?‘Delivered’:‘Not Delivered’});
+const tr = document.getElementById(‘row-’+id);
+tr.classList.toggle(‘done-row’, cb.checked);
+cb.nextElementSibling.textContent = cb.checked ? ‘✓’ : ‘’;
+const statusEl = tr.querySelector(’.status-delivered, .status-pending’);
+if(statusEl){
+statusEl.className = cb.checked ? ‘status-delivered’ : ‘status-pending’;
+statusEl.textContent = cb.checked ? ‘✅ Delivered’ : ‘⏳ Not Delivered’;
+}
+updateStats(); renderBreakdown();
 }
 
 function updateField(id, field, value) {
-  if(!state[id]) state[id] = {};
-  state[id][field] = value;
-  savePart(id, {[field]: value});
+if(!state[id]) state[id] = {};
+state[id][field] = value;
+savePart(id, {[field]: value});
 }
 
 function pushUpdatedSize(id, srno) {
-  const input = document.getElementById('us-'+id);
-  if(!input) return;
-  const val = input.value.trim();
-  if(!val){ showToast('Please enter a size', false); return; }
-  updateField(id, 'updatedSize', val);
-  writeToSheet({action:'updateSize', srno, updatedSize: val});
-  input.style.borderColor = '#059669';
-  setTimeout(()=>{ if(input) input.style.borderColor=''; }, 2000);
+const input = document.getElementById(‘us-’+id);
+if(!input) return;
+const val = input.value.trim();
+if(!val){ showToast(‘Please enter a size’, false); return; }
+updateField(id, ‘updatedSize’, val);
+writeToSheet({action:‘updateSize’, srno, updatedSize: val});
+input.style.borderColor = ‘#059669’;
+setTimeout(()=>{ if(input) input.style.borderColor=’’; }, 2000);
 }
 
 function applyFilters() {
-  const q   = document.getElementById('searchInput').value.toLowerCase();
-  const col = document.getElementById('filterCollege').value;
-  const sz  = document.getElementById('filterSize').value;
-  const clr = document.getElementById('filterColor').value;
-  const ct  = document.getElementById('filterCity').value;
-  const bat = document.getElementById('filterBatch').value;
-  const st  = document.getElementById('filterStatus').value;
-  let visible = 0;
-  document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
-    const sid     = (tr.dataset.sid||'').toLowerCase();
-    const college = tr.querySelector('.td-college').textContent.trim();
-    const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
-    const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
-    const city    = tr.querySelector('.td-city').textContent.trim();
-    const batch   = tr.dataset.batch||'';
-    const id      = tr.dataset.id;
-    const done    = !!getRowState(id).delivered;
-    const show =
-      (!q   || name.includes(q) || sid.includes(q)) &&
-      (!col || college.includes(col)) &&
-      (!sz  || size === sz) &&
-      (!clr || color === clr) &&
-      (!ct  || city === ct) &&
-      (!bat || batch === bat) &&
-      (!st  || (st==='done' ? done : !done));
-    tr.style.display = show ? '' : 'none';
-    if(show) visible++;
-  });
-  document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
-  const isFiltered = q||col||sz||clr||ct||bat||st;
-  const counter = document.getElementById('filterCounter');
-  if(isFiltered){
-    document.getElementById('counterNum').textContent = visible;
-    counter.style.display = 'flex';
-  } else {
-    counter.style.display = 'none';
-  }
+const q   = document.getElementById(‘searchInput’).value.toLowerCase();
+const col = document.getElementById(‘filterCollege’).value;
+const sz  = document.getElementById(‘filterSize’).value;
+const clr = document.getElementById(‘filterColor’).value;
+const ct  = document.getElementById(‘filterCity’).value;
+const bat = document.getElementById(‘filterBatch’).value;
+const st  = document.getElementById(‘filterStatus’).value;
+let visible = 0;
+document.querySelectorAll(’#tableBody tr’).forEach(tr => {
+const name    = tr.querySelector(’.td-name’).textContent.toLowerCase();
+const sid     = (tr.dataset.sid||’’).toLowerCase();
+const college = tr.querySelector(’.td-college’).textContent.trim();
+const size    = tr.querySelector(’.size-badge’)?.textContent.trim()||’’;
+const color   = tr.querySelector(’.color-pill’)?.textContent.trim()||’’;
+const city    = tr.querySelector(’.td-city’).textContent.trim();
+const batch   = tr.dataset.batch||’’;
+const id      = tr.dataset.id;
+const done    = !!getRowState(id).delivered;
+const show =
+(!q   || name.includes(q) || sid.includes(q)) &&
+(!col || college.includes(col)) &&
+(!sz  || size === sz) &&
+(!clr || color === clr) &&
+(!ct  || city === ct) &&
+(!bat || batch === bat) &&
+(!st  || (st===‘done’ ? done : !done));
+tr.style.display = show ? ‘’ : ‘none’;
+if(show) visible++;
+});
+document.getElementById(‘emptyState’).style.display = visible===0 ? ‘block’ : ‘none’;
+const isFiltered = q||col||sz||clr||ct||bat||st;
+const counter = document.getElementById(‘filterCounter’);
+if(isFiltered){
+document.getElementById(‘counterNum’).textContent = visible;
+counter.style.display = ‘flex’;
+} else {
+counter.style.display = ‘none’;
+}
 }
 
 function clearFilters() {
-  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterBatch','filterStatus']
-    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  applyFilters();
+[‘searchInput’,‘filterCollege’,‘filterSize’,‘filterColor’,‘filterCity’,‘filterBatch’,‘filterStatus’]
+.forEach(id => { const el=document.getElementById(id); if(el) el.value=’’; });
+applyFilters();
 }
 
 let _tableReady = false;
 
 function renderFromState(s) {
-  state = s || {};
+state = s || {};
 
-  // Merge new students from Firebase into ALL
-  let changed = false;
-  Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
-    if(!ALL.find(st=>st.id===id)){
-      ALL.push({
-        idx:0, id, srno:v.srno||'', name:v.name||'',
-        studentId:v.studentId||'', size:v.size||'',
-        gender:v.gender||'', college:v.college||'',
-        color:v.color||'', level:v.level||'',
-        mobile:v.mobile||'', city:v.city||'',
-        honor:v.honor||'', batch:v.batch||'',
-        isNew:true,
-      });
-      changed = true;
-    }
-  });
+// Merge new students from Firebase into ALL
+let changed = false;
+Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
+if(!ALL.find(st=>st.id===id)){
+ALL.push({
+idx:0, id, srno:v.srno||’’, name:v.name||’’,
+studentId:v.studentId||’’, size:v.size||’’,
+gender:v.gender||’’, college:v.college||’’,
+color:v.color||’’, level:v.level||’’,
+mobile:v.mobile||’’, city:v.city||’’,
+honor:v.honor||’’, batch:v.batch||’’,
+isNew:true,
+});
+changed = true;
+}
+});
 
-  if(!_tableReady || changed) {
-    // First load or new student added — full re-render
-    if(changed){ ALL.sort((a,b)=>a.name.localeCompare(b.name)); ALL.forEach((s,i)=>s.idx=i+1); }
-    renderTable(); renderBreakdown(); updateStats();
-    _tableReady = true;
-    return;
-  }
-
-  // Subsequent syncs — only update existing rows without re-rendering
-  ALL.forEach(st => {
-    const rs = state[st.id] || {};
-    const delivered = !!rs.delivered;
-    const tr = document.getElementById('row-'+st.id);
-    if(!tr) return;
-
-    // Update delivered state
-    const cb = document.getElementById('cb-'+st.id);
-    if(cb) { cb.checked = delivered; cb.nextElementSibling.textContent = delivered?'✓':''; }
-    tr.classList.toggle('done-row', delivered);
-    tr.dataset.batch = rs.batch || st.batch || '';
-
-    // Update status cell
-    const statusEl = tr.querySelector('.status-delivered, .status-pending');
-    if(statusEl){
-      statusEl.className = delivered ? 'status-delivered' : 'status-pending';
-      statusEl.textContent = delivered ? '✅ Delivered' : '⏳ Not Delivered';
-    }
-
-    // Update updatedSize input
-    const usInput = document.getElementById('us-'+st.id);
-    if(usInput && rs.updatedSize && usInput.value !== rs.updatedSize){
-      usInput.value = rs.updatedSize;
-    }
-  });
-
-  renderBreakdown(); updateStats();
+if(!_tableReady || changed) {
+// First load or new student added — full re-render
+if(changed){ ALL.sort((a,b)=>a.name.localeCompare(b.name)); ALL.forEach((s,i)=>s.idx=i+1); }
+renderTable(); renderBreakdown(); updateStats();
+_tableReady = true;
+return;
 }
 
-function openModal(){ document.getElementById('modalBg').classList.add('open'); }
-function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+// Subsequent syncs — only update existing rows without re-rendering
+ALL.forEach(st => {
+const rs = state[st.id] || {};
+const delivered = !!rs.delivered;
+const tr = document.getElementById(‘row-’+st.id);
+if(!tr) return;
+
+```
+// Update delivered state
+const cb = document.getElementById('cb-'+st.id);
+if(cb) { cb.checked = delivered; cb.nextElementSibling.textContent = delivered?'✓':''; }
+tr.classList.toggle('done-row', delivered);
+tr.dataset.batch = rs.batch || st.batch || '';
+
+// Update status cell
+const statusEl = tr.querySelector('.status-delivered, .status-pending');
+if(statusEl){
+  statusEl.className = delivered ? 'status-delivered' : 'status-pending';
+  statusEl.textContent = delivered ? '✅ Delivered' : '⏳ Not Delivered';
+}
+
+// Update updatedSize input
+const usInput = document.getElementById('us-'+st.id);
+if(usInput && rs.updatedSize && usInput.value !== rs.updatedSize){
+  usInput.value = rs.updatedSize;
+}
+```
+
+});
+
+renderBreakdown(); updateStats();
+}
+
+function openModal(){ document.getElementById(‘modalBg’).classList.add(‘open’); }
+function closeModal(){ document.getElementById(‘modalBg’).classList.remove(‘open’); }
 
 function saveNewStudent() {
-  const name = document.getElementById('m_name').value.trim();
-  if(!name){ showToast('Student Name is required', false); return; }
-  const id = 'new_'+Date.now();
-  const newSt = {
-    isNew:1,
-    srno:    document.getElementById('m_srno').value.trim(),
-    name,
-    studentId: document.getElementById('m_id').value.trim(),
-    size:    document.getElementById('m_size').value.trim(),
-    gender:  document.getElementById('m_gender').value.trim(),
-    college: document.getElementById('m_college').value.trim(),
-    color:   document.getElementById('m_color').value,
-    level:   document.getElementById('m_level').value.trim(),
-    mobile:  document.getElementById('m_mobile').value.trim(),
-    city:    document.getElementById('m_city').value.trim(),
-    honor:   document.getElementById('m_honor').value,
-    batch:   document.getElementById('m_batch').value,
-  };
-  if(!state[id]) state[id]={};
-  Object.assign(state[id], newSt);
-  savePart(id, newSt);
-  // Write to sheet
-  writeToSheet({action:'addStudent', ...newSt});
-  closeModal();
-  ['m_srno','m_name','m_id','m_size','m_gender','m_college','m_level','m_mobile','m_city']
-    .forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
-  ['m_color','m_honor','m_batch'].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
+const name = document.getElementById(‘m_name’).value.trim();
+if(!name){ showToast(‘Student Name is required’, false); return; }
+const id = ‘new_’+Date.now();
+const newSt = {
+isNew:1,
+srno:    document.getElementById(‘m_srno’).value.trim(),
+name,
+studentId: document.getElementById(‘m_id’).value.trim(),
+size:    document.getElementById(‘m_size’).value.trim(),
+gender:  document.getElementById(‘m_gender’).value.trim(),
+college: document.getElementById(‘m_college’).value.trim(),
+color:   document.getElementById(‘m_color’).value,
+level:   document.getElementById(‘m_level’).value.trim(),
+mobile:  document.getElementById(‘m_mobile’).value.trim(),
+city:    document.getElementById(‘m_city’).value.trim(),
+honor:   document.getElementById(‘m_honor’).value,
+batch:   document.getElementById(‘m_batch’).value,
+};
+if(!state[id]) state[id]={};
+Object.assign(state[id], newSt);
+savePart(id, newSt);
+// Write to sheet
+writeToSheet({action:‘addStudent’, …newSt});
+closeModal();
+[‘m_srno’,‘m_name’,‘m_id’,‘m_size’,‘m_gender’,‘m_college’,‘m_level’,‘m_mobile’,‘m_city’]
+.forEach(f=>{ const el=document.getElementById(f); if(el) el.value=’’; });
+[‘m_color’,‘m_honor’,‘m_batch’].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=’’; });
 }
 
 onValue(ref(db, DB_KEY), snapshot => {
-  renderFromState(snapshot.val() || {});
+renderFromState(snapshot.val() || {});
 });
 
 function deleteStudent(id) {
-  if(!confirm('Delete this student?')) return;
-  // Remove from ALL array
-  ALL = ALL.filter(st => st.id !== id);
-  // Remove from Firebase state
-  if(state[id]) {
-    delete state[id];
-    set(ref(db, DB_KEY), state);
-  }
-  // Remove row from table
-  const tr = document.getElementById('row-'+id);
-  if(tr) tr.remove();
-  updateStats(); renderBreakdown();
-  showToast('🗑 Student deleted');
+if(!confirm(‘Delete this student?’)) return;
+// Remove from ALL array
+ALL = ALL.filter(st => st.id !== id);
+// Remove from Firebase state
+if(state[id]) {
+delete state[id];
+set(ref(db, DB_KEY), state);
+}
+// Remove row from table
+const tr = document.getElementById(‘row-’+id);
+if(tr) tr.remove();
+updateStats(); renderBreakdown();
+showToast(‘🗑 Student deleted’);
+}
+
+function exportExcel() {
+// Build data array
+const headers = [
+‘Sr. No’,‘Student Name’,‘Student ID’,‘Size’,‘Updated Size’,
+‘Gender’,‘College’,‘Color’,‘Level’,‘Mobile Number’,‘City’,
+‘Honors’,‘Status’,‘Batch’,‘Comments’
+];
+
+const rows = ALL.map(st => {
+const rs = getRowState(st.id);
+const delivered = !!rs.delivered || st.deliveredFromSheet;
+return [
+st.srno,
+st.name,
+st.studentId||’’,
+st.size,
+rs.updatedSize||’’,
+st.gender||’’,
+st.college,
+st.color,
+st.level||’’,
+st.mobile||’’,
+st.city,
+st.honor||’’,
+delivered ? ‘Delivered’ : ‘Not Delivered’,
+rs.batch||st.batch||’’,
+rs.comment||’’
+];
+});
+
+// Build CSV
+const escape = v => {
+const s = String(v||’’);
+return s.includes(’,’) || s.includes(’”’) || s.includes(’
+‘)
+? ‘”’ + s.replace(/”/g,’””’) + ‘”’
+: s;
+};
+
+const csv = [headers, …rows]
+.map(row => row.map(escape).join(’,’))
+.join(’
+’);
+
+// Add BOM for Excel Arabic support
+const bom = ‘﻿’;
+const blob = new Blob([bom + csv], {type:‘text/csv;charset=utf-8’});
+const url  = URL.createObjectURL(blob);
+const a    = document.createElement(‘a’);
+a.href     = url;
+a.download = ‘gown-distribution-’ + new Date().toISOString().slice(0,10) + ‘.csv’;
+a.click();
+URL.revokeObjectURL(url);
+showToast(‘✅ File downloaded!’);
 }
 
 window.toggle          = toggle;
