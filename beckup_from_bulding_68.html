@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
@@ -183,7 +184,7 @@ td{padding:8px 14px;vertical-align:middle;}
   <div class="leg-item"><div class="leg-dot" style="background:#92400e"></div>Design & Built Env. — Brown</div>
 </div>
 <div class="filters">
-  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search by name..." oninput="applyFilters()" id="searchInput"></div>
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search by name or KFUPM ID..." oninput="applyFilters()" id="searchInput"></div>
   <span class="filter-label">College:</span>
   <select onchange="applyFilters()" id="filterCollege">
     <option value="">All Colleges</option>
@@ -272,7 +273,7 @@ const SHEET_ID   = '1NPHSBmRbXx6gOD2Ji7Njzsh6ElR4AT8dmYRNcudTNm4';
 const SHEET_NAME = 'system list';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
 const DB_KEY     = 'gownMaleChecklist_v2';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/library/d/1r18cvXXHB8L-filyci6Dyinz2RmzrknVLSRXP9HT4xGkQmRPWZTD6xjE/7';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBRHs7mIzT-wWnWOV4HdQ-xHR9zdXwGv-zJRMKcP6Aw5Ad0vNVegs9r2stBp7c2XDcnw/exec';
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -298,21 +299,18 @@ function showToast(msg, success=true) {
 }
 
 // Write to Google Sheet via Apps Script (no-cors)
-function writeToSheet(payload) {
-  if (!APPS_SCRIPT_URL) {
-    showToast('Apps Script URL missing', false);
-    return;
+async function writeToSheet(payload) {
+  if(!APPS_SCRIPT_URL) return;
+  try {
+    // Use no-cors since Apps Script doesn't return CORS headers for cross-origin
+    await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({...payload, sheetName: SHEET_NAME})), {
+      method: 'GET',
+    });
+    showToast('✅ Sheet updated!');
+  } catch(e) {
+    console.warn('Sheet write failed:', e);
+    showToast('⚠️ Saved locally, sheet update failed', false);
   }
-
-  const data = encodeURIComponent(JSON.stringify({
-    ...payload,
-    sheetName: SHEET_NAME
-  }));
-
-  const img = new Image();
-  img.src = APPS_SCRIPT_URL + '?data=' + data + '&t=' + Date.now();
-
-  showToast('✅ Sent to Google Sheet');
 }
 
 const fixCity = c => {
@@ -397,6 +395,7 @@ function renderTable() {
     const tr = document.createElement('tr');
     tr.id = 'row-'+st.id;
     tr.dataset.id    = st.id;
+    tr.dataset.sid   = st.studentId||'';
     tr.dataset.batch = batch;
     if(delivered) tr.classList.add('done-row');
     if(isNew)     tr.classList.add('new-row');
@@ -513,6 +512,7 @@ function applyFilters() {
   let visible = 0;
   document.querySelectorAll('#tableBody tr').forEach(tr => {
     const name    = tr.querySelector('.td-name').textContent.toLowerCase();
+    const sid     = (tr.dataset.sid||'').toLowerCase();
     const college = tr.querySelector('.td-college').textContent.trim();
     const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
     const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
@@ -521,7 +521,7 @@ function applyFilters() {
     const id      = tr.dataset.id;
     const done    = !!getRowState(id).delivered;
     const show =
-      (!q   || name.includes(q)) &&
+      (!q   || name.includes(q) || sid.includes(q)) &&
       (!col || college.includes(col)) &&
       (!sz  || size === sz) &&
       (!clr || color === clr) &&
@@ -612,27 +612,24 @@ function openModal(){ document.getElementById('modalBg').classList.add('open'); 
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
 
 function saveNewStudent() {
- const name = document.getElementById('m_name').value.trim();
-if(!name){ showToast('Student Name is required', false); return; }
-
-const srnoValue = document.getElementById('m_srno').value.trim();
-const id = srnoValue || ('new_' + Date.now());
- 
+  const name = document.getElementById('m_name').value.trim();
+  if(!name){ showToast('Student Name is required', false); return; }
+  const id = 'new_'+Date.now();
   const newSt = {
-  isNew:1,
-  srno: "", 
-  name,
-  studentId: document.getElementById('m_id').value.trim(),
-  size: document.getElementById('m_size').value.trim(),
-  gender: document.getElementById('m_gender').value.trim(),
-  college: document.getElementById('m_college').value.trim(),
-  color: document.getElementById('m_color').value,
-  level: document.getElementById('m_level').value.trim(),
-  mobile: document.getElementById('m_mobile').value.trim(),
-  city: document.getElementById('m_city').value.trim(),
-  honor: document.getElementById('m_honor').value,
-  batch: document.getElementById('m_batch').value,
-};
+    isNew:1,
+    srno:    document.getElementById('m_srno').value.trim(),
+    name,
+    studentId: document.getElementById('m_id').value.trim(),
+    size:    document.getElementById('m_size').value.trim(),
+    gender:  document.getElementById('m_gender').value.trim(),
+    college: document.getElementById('m_college').value.trim(),
+    color:   document.getElementById('m_color').value,
+    level:   document.getElementById('m_level').value.trim(),
+    mobile:  document.getElementById('m_mobile').value.trim(),
+    city:    document.getElementById('m_city').value.trim(),
+    honor:   document.getElementById('m_honor').value,
+    batch:   document.getElementById('m_batch').value,
+  };
   if(!state[id]) state[id]={};
   Object.assign(state[id], newSt);
   savePart(id, newSt);
@@ -660,5 +657,6 @@ window.pushUpdatedSize = pushUpdatedSize;
 
 loadData();
 </script>
+
 </body>
 </html>
