@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
@@ -15,6 +16,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;color:var(--indigo);cursor:pointer;}
 .reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
 .add-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
+.export-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
 .loading{text-align:center;padding:80px 20px;color:var(--muted);}
 .spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -136,8 +138,8 @@ td{padding:8px 14px;vertical-align:middle;}
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveNewStudent()">Add Student</button>
+      <button class="btn-cancel" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-save" onclick="window.saveNewStudent()">Add Student</button>
     </div>
   </div>
 </div>
@@ -148,7 +150,8 @@ td{padding:8px 14px;vertical-align:middle;}
     <h1>Male Undergraduate Students — Gown Distribution</h1>
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
-  <button class="add-btn" onclick="openModal()">➕ Add Student</button>
+  <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
+  <button class="export-btn" onclick="exportExcel()">📥 Export Excel</button>
   <button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
 </div>
 
@@ -303,11 +306,7 @@ async function writeToSheet(payload) {
   if(!APPS_SCRIPT_URL) return;
   const body = JSON.stringify({...payload, sheetName: SHEET_NAME});
   try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body,
-    });
+    const res = await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body});
     const json = await res.json();
     if(json.success) showToast('✅ Sheet updated!');
     else showToast('⚠️ '+json.error, false);
@@ -315,9 +314,7 @@ async function writeToSheet(payload) {
     try {
       await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(body), {method:'GET', mode:'no-cors'});
       showToast('✅ Sheet updated!');
-    } catch(e2) {
-      showToast('⚠️ Sheet update failed', false);
-    }
+    } catch(e2) { showToast('⚠️ Sheet update failed', false); }
   }
 }
 
@@ -325,7 +322,7 @@ const fixCity = c => {
   if(!c) return '';
   c = c.trim();
   if(c==='رأس تنورة'||c==='راس تنورة') return 'رأس تنورة';
-  if(c==='الأحساء'||c==='الاحساء')     return 'الاحساء';
+  if(c==='الأحساء'||c==='الاحساء') return 'الاحساء';
   return c;
 };
 
@@ -340,10 +337,7 @@ async function loadData(forceRefresh=false) {
       const cached = sessionStorage.getItem(CACHE_KEY);
       if(cached) {
         const {data, ts} = JSON.parse(cached);
-        if(Date.now() - ts < CACHE_TTL) {
-          processSheetData(data);
-          return;
-        }
+        if(Date.now() - ts < CACHE_TTL) { processSheetData(data); return; }
       }
     } catch(e) {}
   }
@@ -352,7 +346,7 @@ async function loadData(forceRefresh=false) {
     const res  = await fetch(SHEET_URL);
     const text = await res.text();
     const json = JSON.parse(text.match(/setResponse\(([\s\S]*)\)/)[1]);
-    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({data: json, ts: Date.now()})); } catch(e) {}
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({data:json, ts:Date.now()})); } catch(e) {}
     processSheetData(json);
   } catch(e) {
     document.getElementById('loadingState').innerHTML = `<div style="color:#dc2626;font-weight:700;">❌ Failed to load data.<br><span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
@@ -364,7 +358,6 @@ function processSheetData(json) {
   const cols = json.table.cols;
   const map = {};
   cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
-  
   const gv = (r,...names) => {
     for(const name of names){
       const i = map[name.toLowerCase()];
@@ -378,24 +371,15 @@ function processSheetData(json) {
     const name = gv(r,'student name');
     if(!name) return;
     const sheetStatus = gv(r,'status').toLowerCase();
-    const deliveredFromSheet = sheetStatus === 'delivered' || sheetStatus === 'تم التوصيل';
+    const deliveredFromSheet = sheetStatus==='delivered' || sheetStatus==='تم التوصيل';
     ALL.push({
-      idx:       i+1, 
-      id:        gv(r,'sr. no','sr.no') || String(i+1),
-      srno:      gv(r,'sr. no','sr.no') || '',
-      name,
-      studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
-      size:      gv(r,'size'),
-      gender:    gv(r,'gender'),
-      college:   gv(r,'college'),
-      color:     gv(r,'color','colour'),
-      level:     gv(r,'level'),
-      mobile:    gv(r,'mobile number','mobile'),
-      city:      fixCity(gv(r,'city')),
-      honor:     gv(r,'honors','honor','honor rank'),
-      batch:     gv(r,'batch'),
-      deliveredFromSheet,
-      isNew:     false,
+      idx:i+1, id:gv(r,'sr. no','sr.no')||String(i+1), srno:gv(r,'sr. no','sr.no')||'',
+      name, studentId:gv(r,'kfupm id','student id','kfupmid','studentid'),
+      size:gv(r,'size'), gender:gv(r,'gender'), college:gv(r,'college'),
+      color:gv(r,'color','colour'), level:gv(r,'level'),
+      mobile:gv(r,'mobile number','mobile'), city:fixCity(gv(r,'city')),
+      honor:gv(r,'honors','honor','honor rank'), batch:gv(r,'batch'),
+      deliveredFromSheet, isNew:false,
     });
   });
 
@@ -412,9 +396,9 @@ function processSheetData(json) {
 }
 
 function getRowState(id) {
-  const st = ALL.find(s => s.id === id);
+  const st = ALL.find(s=>s.id===id);
   const fb = state[id] || {};
-  if(fb.delivered === undefined && st && st.deliveredFromSheet) return {...fb, delivered: 1};
+  if(fb.delivered===undefined && st && st.deliveredFromSheet) return {...fb, delivered:1};
   return fb;
 }
 
@@ -426,141 +410,191 @@ function renderTable() {
     const delivered = !!rs.delivered;
     const isNew = st.isNew || !!rs.isNew;
     const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
-
     const tr = document.createElement('tr');
-    tr.id = 'row-'+st.id; tr.dataset.id = st.id; tr.dataset.sid = st.studentId||'';
+    tr.id='row-'+st.id; tr.dataset.id=st.id; tr.dataset.sid=st.studentId||''; tr.dataset.batch=rs.batch||st.batch||'';
     if(delivered) tr.classList.add('done-row');
     if(isNew) tr.classList.add('new-row');
-
     tr.innerHTML = `
       <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
-      <td style="text-align:center">${st.srno}</td>
-      <td class="td-name">${st.name}</td>
-      <td>${st.studentId||'—'}</td>
+      <td style="text-align:center;font-size:.75rem;color:var(--muted);font-weight:700">${st.srno}</td>
+      <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800"> NEW</span>':''}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
-      <td><input class="edit-input" id="us-${st.id}" value="${rs.updatedSize||''}" placeholder="Update..."><button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;padding:3px 6px;margin-left:4px;cursor:pointer">✓</button></td>
-      <td>${st.gender||'—'}</td>
-      <td class="td-college">${st.college}</td>
-      <td><span class="color-pill" style="background:${bg};color:${fg}">${st.color}</span></td>
-      <td>${st.level||'—'}</td>
+      <td style="white-space:nowrap"><input class="edit-input" id="us-${st.id}" value="${rs.updatedSize||''}" placeholder="New size..."><button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;padding:3px 8px;margin-right:2px;cursor:pointer;font-size:.72rem">✓</button></td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
+      <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
+      <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
+      <td style="font-size:.78rem;color:var(--muted)">${st.level||'—'}</td>
       <td class="td-mobile">${st.mobile||'—'}</td>
       <td class="td-city">${st.city}</td>
       <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
-      <td>${st.batch||'—'}</td>
-      <td><textarea class="comment-input" rows="1" onchange="window.updateField('${st.id}','comment',this.value)">${rs.comment||''}</textarea></td>
-      <td><button onclick="window.deleteStudent('${st.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:4px 8px;cursor:pointer">🗑</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-  applyFilters();
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${rs.batch||st.batch||'—'}</td>
+      <td><textarea class="comment-input" rows="1" placeholder="Comment..." onchange="window.updateField('${st.id}','comment',this.value)">${rs.comment||''}</textarea></td>
+
+```
+  <td><button onclick="window.deleteStudent('${st.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem">🗑</button></td>`;
+tbody.appendChild(tr);
+```
+
+});
+applyFilters();
 }
 
 function updateStats() {
-  const total = ALL.length; 
-  const done = ALL.filter(st=>getRowState(st.id).delivered).length;
-  const pct = total ? Math.round(done/total*100) : 0;
-  document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent = done;
-  document.getElementById('cLeft').textContent = total - done;
-  document.getElementById('cPct').textContent = pct + '%';
-  document.getElementById('progChip').textContent = `${done} / ${total}`;
-  document.getElementById('mainBar').style.width = pct + '%';
+const total = ALL.length;
+const done = ALL.filter(st=>getRowState(st.id).delivered).length;
+const pct = total ? Math.round(done/total*100) : 0;
+document.getElementById(‘cTotal’).textContent = total;
+document.getElementById(‘cDone’).textContent = done;
+document.getElementById(‘cLeft’).textContent = total-done;
+document.getElementById(‘cPct’).textContent = pct+’%’;
+document.getElementById(‘progChip’).textContent = done+’ / ‘+total;
+document.getElementById(‘mainBar’).style.width = pct+’%’;
 }
 
 function renderBreakdown() {
-  const countBy = key => {
-    const m = {};
-    ALL.forEach(st => {
-      const v = (key==='batch' ? (getRowState(st.id).batch||st.batch) : st[key]) || '—';
-      if(!m[v]) m[v] = {total:0, handed:0};
-      m[v].total++;
-      if(getRowState(st.id).delivered) m[v].handed++;
-    });
-    return Object.entries(m).sort((a,b)=>b[1].total - a[1].total);
-  };
-  const panel = (id, entries) => {
-    document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => `
-      <div class="bk-row"><div style="flex:1"><div class="bk-label">${l}</div><div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%\"></div></div></div>
-      <div style="text-align:right;font-size:.75rem"><b>${handed}</b> / ${total}</div></div>`).join('');
-  };
-  panel('bkSize', countBy('size')); panel('bkCollege', countBy('college')); panel('bkCity', countBy('city')); panel('bkBatch', countBy('batch'));
+const countBy = key => {
+const m = {};
+ALL.forEach(st => {
+const v = (key===‘batch’?(getRowState(st.id).batch||st.batch):st[key])||’—’;
+if(!m[v]) m[v]={total:0,handed:0};
+m[v].total++;
+if(getRowState(st.id).delivered) m[v].handed++;
+});
+return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
+};
+const panel = (id, entries) => {
+document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => ` <div class="bk-row"><div style="flex:1"><div class="bk-label">${l}</div><div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div></div> <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700"><span style="color:#059669">${handed}</span> / ${total}</div></div>`).join(’’);
+};
+panel(‘bkSize’,countBy(‘size’)); panel(‘bkCollege’,countBy(‘college’)); panel(‘bkCity’,countBy(‘city’)); panel(‘bkBatch’,countBy(‘batch’));
 }
 
 function toggle(id) {
-  const cb = document.getElementById('cb-'+id);
-  if(!state[id]) state[id] = {};
-  state[id].delivered = cb.checked ? 1 : 0;
-  savePart(id, {delivered: state[id].delivered});
-  const srno = ALL.find(st=>st.id===id)?.srno;
-  if(srno) writeToSheet({action:'updateStatus', srno, status: cb.checked?'Delivered':'Not Delivered'});
+const cb = document.getElementById(‘cb-’+id);
+if(!state[id]) state[id]={};
+state[id].delivered = cb.checked?1:0;
+savePart(id, {delivered:state[id].delivered});
+const tr = document.getElementById(‘row-’+id);
+tr.classList.toggle(‘done-row’, cb.checked);
+cb.nextElementSibling.textContent = cb.checked?‘✓’:’’;
+const statusEl = tr.querySelector(’.status-delivered,.status-pending’);
+if(statusEl){ statusEl.className=cb.checked?‘status-delivered’:‘status-pending’; statusEl.textContent=cb.checked?‘✅ Delivered’:‘⏳ Not Delivered’; }
+const srno = ALL.find(st=>st.id===id)?.srno;
+if(srno) writeToSheet({action:‘updateStatus’, srno, status:cb.checked?‘Delivered’:‘Not Delivered’});
+updateStats(); renderBreakdown();
 }
 
 function pushUpdatedSize(id, srno) {
-  const v = document.getElementById('us-'+id).value.trim();
-  if(!v) return;
-  updateField(id, 'updatedSize', v);
-  if(srno) writeToSheet({action:'updateSize', srno, updatedSize: v});
+const v = document.getElementById(‘us-’+id)?.value.trim();
+if(!v) return;
+updateField(id,‘updatedSize’,v);
+if(srno) writeToSheet({action:‘updateSize’, srno, updatedSize:v});
 }
 
-function updateField(id, f, v) {
-  if(!state[id]) state[id] = {};
-  state[id][f] = v;
-  savePart(id, {[f]: v});
+function updateField(id,f,v) {
+if(!state[id]) state[id]={};
+state[id][f]=v;
+savePart(id,{[f]:v});
 }
 
 function applyFilters() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  const col = document.getElementById('filterCollege').value;
-  const sz = document.getElementById('filterSize').value;
-  const st = document.getElementById('filterStatus').value;
-  let vis = 0;
-  document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name = tr.querySelector('.td-name').textContent.toLowerCase();
-    const sid = tr.dataset.sid.toLowerCase();
-    const college = tr.querySelector('.td-college').textContent;
-    const size = tr.querySelector('.size-badge').textContent;
-    const done = getRowState(tr.dataset.id).delivered;
-    const show = (!q || name.includes(q) || sid.includes(q)) && (!col || college.includes(col)) && (!sz || size===sz) && (!st || (st==='done' ? done : !done));
-    tr.style.display = show ? '' : 'none';
-    if(show) vis++;
-  });
-  document.getElementById('counterNum').textContent = vis;
-  document.getElementById('filterCounter').style.display = (q||col||sz||st) ? 'flex' : 'none';
-  document.getElementById('emptyState').style.display = vis===0 ? 'block' : 'none';
+const q=document.getElementById(‘searchInput’).value.toLowerCase();
+const col=document.getElementById(‘filterCollege’).value;
+const sz=document.getElementById(‘filterSize’).value;
+const clr=document.getElementById(‘filterColor’).value;
+const ct=document.getElementById(‘filterCity’).value;
+const bat=document.getElementById(‘filterBatch’).value;
+const st=document.getElementById(‘filterStatus’).value;
+let vis=0;
+document.querySelectorAll(’#tableBody tr’).forEach(tr=>{
+const name=tr.querySelector(’.td-name’).textContent.toLowerCase();
+const sid=(tr.dataset.sid||’’).toLowerCase();
+const college=tr.querySelector(’.td-college’)?.textContent||’’;
+const size=tr.querySelector(’.size-badge’)?.textContent||’’;
+const color=tr.querySelector(’.color-pill’)?.textContent||’’;
+const city=tr.querySelector(’.td-city’)?.textContent||’’;
+const batch=tr.dataset.batch||’’;
+const done=!!getRowState(tr.dataset.id).delivered;
+const show=(!q||name.includes(q)||sid.includes(q))&&(!col||college.includes(col))&&(!sz||size===sz)&&(!clr||color===clr)&&(!ct||city===ct)&&(!bat||batch===bat)&&(!st||(st===‘done’?done:!done));
+tr.style.display=show?’’:‘none’;
+if(show) vis++;
+});
+document.getElementById(‘counterNum’).textContent=vis;
+document.getElementById(‘filterCounter’).style.display=(q||col||sz||clr||ct||bat||st)?‘flex’:‘none’;
+document.getElementById(‘emptyState’).style.display=vis===0?‘block’:‘none’;
 }
 
 function clearFilters() {
-  ['searchInput','filterCollege','filterSize','filterStatus'].forEach(id => document.getElementById(id).value='');
-  applyFilters();
+[‘searchInput’,‘filterCollege’,‘filterSize’,‘filterColor’,‘filterCity’,‘filterBatch’,‘filterStatus’].forEach(id=>{const el=document.getElementById(id);if(el)el.value=’’;});
+applyFilters();
 }
 
 function renderFromState(s) {
-  state = s || {};
-  renderTable(); updateStats(); renderBreakdown();
+state = s||{};
+// Add new students from Firebase
+Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
+if(!ALL.find(st=>st.id===id)){
+ALL.push({idx:0,id,srno:v.srno||’’,name:v.name||’’,studentId:v.studentId||’’,size:v.size||’’,gender:v.gender||’’,college:v.college||’’,color:v.color||’’,level:v.level||’’,mobile:v.mobile||’’,city:v.city||’’,honor:v.honor||’’,batch:v.batch||’’,deliveredFromSheet:false,isNew:true});
+}
+});
+ALL.sort((a,b)=>a.name.localeCompare(b.name));
+renderTable(); updateStats(); renderBreakdown();
 }
 
-function openModal(){ document.getElementById('modalBg').classList.add('open'); }
-function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+function openModal(){ document.getElementById(‘modalBg’).classList.add(‘open’); }
+function closeModal(){ document.getElementById(‘modalBg’).classList.remove(‘open’); }
 
 function saveNewStudent() {
-  const name = document.getElementById('m_name').value.trim();
-  if(!name) return showToast('Name required', false);
-  const id = 'new_' + Date.now();
-  const data = { isNew:1, srno:document.getElementById('m_srno').value, name, studentId:document.getElementById('m_id').value, size:document.getElementById('m_size').value, gender:document.getElementById('m_gender').value, college:document.getElementById('m_college').value, color:document.getElementById('m_color').value };
-  savePart(id, data); writeToSheet({action:'addStudent', ...data}); closeModal();
+const name=document.getElementById(‘m_name’).value.trim();
+if(!name) return showToast(‘Name required’,false);
+const id=‘new_’+Date.now();
+const data={isNew:1,srno:document.getElementById(‘m_srno’).value,name,studentId:document.getElementById(‘m_id’).value,size:document.getElementById(‘m_size’).value,gender:document.getElementById(‘m_gender’).value,college:document.getElementById(‘m_college’).value,color:document.getElementById(‘m_color’).value,level:document.getElementById(‘m_level’).value,mobile:document.getElementById(‘m_mobile’).value,city:document.getElementById(‘m_city’).value,honor:document.getElementById(‘m_honor’).value,batch:document.getElementById(‘m_batch’).value};
+if(!state[id]) state[id]={};
+Object.assign(state[id],data);
+savePart(id,data);
+writeToSheet({action:‘addStudent’,…data});
+closeModal();
+[‘m_srno’,‘m_name’,‘m_id’,‘m_size’,‘m_gender’,‘m_college’,‘m_level’,‘m_mobile’,‘m_city’].forEach(f=>{const el=document.getElementById(f);if(el)el.value=’’;});
+[‘m_color’,‘m_honor’,‘m_batch’].forEach(f=>{const el=document.getElementById(f);if(el)el.value=’’;});
 }
 
 function deleteStudent(id) {
-  if(confirm('Delete student?')) { delete state[id]; set(ref(db, DB_KEY), state); showToast('Deleted'); }
+if(!confirm(‘Delete this student?’)) return;
+ALL = ALL.filter(st=>st.id!==id);
+delete state[id];
+set(ref(db,DB_KEY),state);
+const tr=document.getElementById(‘row-’+id);
+if(tr) tr.remove();
+updateStats(); renderBreakdown();
+showToast(‘🗑 Student deleted’);
 }
 
-window.toggle = toggle; window.applyFilters = applyFilters; window.clearFilters = clearFilters; 
-window.loadData = loadData; window.openModal = openModal; window.closeModal = closeModal; 
-window.saveNewStudent = saveNewStudent; window.updateField = updateField; 
-window.pushUpdatedSize = pushUpdatedSize; window.deleteStudent = deleteStudent;
+function exportExcel() {
+const headers=[‘Sr. No’,‘Student Name’,‘Student ID’,‘Size’,‘Updated Size’,‘Gender’,‘College’,‘Color’,‘Level’,‘Mobile Number’,‘City’,‘Honors’,‘Status’,‘Batch’,‘Comments’];
+const rows=ALL.map(st=>{
+const rs=getRowState(st.id);
+const delivered=!!rs.delivered;
+return [st.srno,st.name,st.studentId||’’,st.size,rs.updatedSize||’’,st.gender||’’,st.college,st.color,st.level||’’,st.mobile||’’,st.city,st.honor||’’,delivered?‘Delivered’:‘Not Delivered’,rs.batch||st.batch||’’,rs.comment||’’];
+});
+const esc=v=>{const s=String(v||’’);return(s.includes(’,’)||s.includes(’”’)||s.includes(’\n’))?’”’+s.replace(/”/g,’””’)+’”’:s;};
+const csv=[headers,…rows].map(r=>r.map(esc).join(’,’)).join(’\n’);
+const blob=new Blob([’\uFEFF’+csv],{type:‘text/csv;charset=utf-8’});
+const a=document.createElement(‘a’);
+a.href=URL.createObjectURL(blob);
+a.download=‘gown-distribution-’+new Date().toISOString().slice(0,10)+’.csv’;
+a.click();
+showToast(‘✅ File downloaded!’);
+}
+
+window.toggle=toggle; window.applyFilters=applyFilters; window.clearFilters=clearFilters;
+window.loadData=loadData; window.openModal=openModal; window.closeModal=closeModal;
+window.saveNewStudent=saveNewStudent; window.updateField=updateField;
+window.pushUpdatedSize=pushUpdatedSize; window.deleteStudent=deleteStudent;
+window.exportExcel=exportExcel;
 
 loadData();
 </script>
+
 </body>
 </html>
