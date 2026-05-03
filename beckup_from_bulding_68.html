@@ -530,16 +530,44 @@ function clearFilters() {
 applyFilters();
 }
 
+let _firstRender = false;
+
 function renderFromState(s) {
 state = s||{};
-// Add new students from Firebase
+
+// Check for new students added via Firebase
+let hasNew = false;
 Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
 if(!ALL.find(st=>st.id===id)){
 ALL.push({idx:0,id,srno:v.srno||’’,name:v.name||’’,studentId:v.studentId||’’,size:v.size||’’,gender:v.gender||’’,college:v.college||’’,color:v.color||’’,level:v.level||’’,mobile:v.mobile||’’,city:v.city||’’,honor:v.honor||’’,batch:v.batch||’’,deliveredFromSheet:false,isNew:true});
+hasNew = true;
 }
 });
-ALL.sort((a,b)=>a.name.localeCompare(b.name));
-renderTable(); updateStats(); renderBreakdown();
+
+if(!_firstRender || hasNew) {
+// Full render on first load or when new student added
+if(hasNew) ALL.sort((a,b)=>a.name.localeCompare(b.name));
+renderTable();
+_firstRender = true;
+} else {
+// Just update checkboxes and status — no full re-render
+ALL.forEach(st => {
+const rs = getRowState(st.id);
+const delivered = !!rs.delivered;
+const cb = document.getElementById(‘cb-’+st.id);
+const tr = document.getElementById(‘row-’+st.id);
+if(!cb || !tr) return;
+cb.checked = delivered;
+cb.nextElementSibling.textContent = delivered?‘✓’:’’;
+tr.classList.toggle(‘done-row’, delivered);
+const statusEl = tr.querySelector(’.status-delivered,.status-pending’);
+if(statusEl){ statusEl.className=delivered?‘status-delivered’:‘status-pending’; statusEl.textContent=delivered?‘✅ Delivered’:‘⏳ Not Delivered’; }
+const usInput = document.getElementById(‘us-’+st.id);
+if(usInput && rs.updatedSize) usInput.value = rs.updatedSize;
+});
+}
+
+updateStats(); renderBreakdown();
 }
 
 function openModal(){ document.getElementById(‘modalBg’).classList.add(‘open’); }
