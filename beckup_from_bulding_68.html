@@ -16,7 +16,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;color:var(--indigo);cursor:pointer;}
 .reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
 .add-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
-.export-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
 .loading{text-align:center;padding:80px 20px;color:var(--muted);}
 .spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -151,8 +150,7 @@ td{padding:8px 14px;vertical-align:middle;}
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
   <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
-  <button class="export-btn" onclick="exportExcel()">📥 Export Excel</button>
-  <button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
+<button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
 </div>
 
 <div id="loadingState" class="loading">
