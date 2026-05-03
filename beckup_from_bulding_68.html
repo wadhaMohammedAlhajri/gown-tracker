@@ -79,16 +79,17 @@ td{padding:8px 14px;vertical-align:middle;}
 .honor-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:800;background:#fef3c7;color:#d97706;border:1px solid #fde68a;}
 .status-delivered{color:#059669;font-weight:700;font-size:.75rem;}
 .status-pending{color:#dc2626;font-weight:700;font-size:.75rem;}
-.edit-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.8rem;width:80px;background:#f8f9ff;color:var(--text);outline:none;}
-.edit-input:focus{border-color:#4f46e5;background:#fff;}
+.edit-input, .comment-input{border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:.8rem;width:80px;background:#f8f9ff;color:var(--text);outline:none;}
+.edit-input:focus, .comment-input:focus{border-color:#4f46e5;background:#fff;}
+.comment-input{width:120px;}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
 .modal{background:#fff;border-radius:20px;padding:28px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);}
 .modal h3{font-size:1rem;font-weight:800;margin-bottom:18px;}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
 .modal label{font-size:.75rem;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
-.modal input,.modal select{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;outline:none;}
-.modal input:focus,.modal select:focus{border-color:#4f46e5;}
+.modal input, .modal select{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;outline:none;}
+.modal input:focus, .modal select:focus{border-color:#4f46e5;}
 .modal-btns{display:flex;gap:10px;justify-content:flex-end;}
 .btn-cancel{padding:9px 20px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
 .btn-save{padding:9px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;}
@@ -148,7 +149,7 @@ td{padding:8px 14px;vertical-align:middle;}
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
   <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
-  <button class="reload-btn" onclick="window.loadData()">🔄 Refresh</button>
+<button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
 </div>
 
 <div id="loadingState" class="loading">
@@ -183,7 +184,7 @@ td{padding:8px 14px;vertical-align:middle;}
   <div class="leg-item"><div class="leg-dot" style="background:#92400e"></div>Design & Built Env. — Brown</div>
 </div>
 <div class="filters">
-  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search by name..." oninput="applyFilters()" id="searchInput"></div>
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" placeholder="Search by name or KFUPM ID..." oninput="applyFilters()" id="searchInput"></div>
   <span class="filter-label">College:</span>
   <select onchange="applyFilters()" id="filterCollege">
     <option value="">All Colleges</option>
@@ -247,6 +248,8 @@ td{padding:8px 14px;vertical-align:middle;}
       <th>Honors</th>
       <th>Status</th>
       <th>Batch</th>
+      <th style="min-width:140px">Comments</th>
+      <th>Action</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -288,7 +291,6 @@ const COLOR_STYLE = {
 
 const savePart = (id, data) => update(ref(db, `${DB_KEY}/${id}`), data);
 
-// Toast notification
 function showToast(msg, success=true) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -297,18 +299,19 @@ function showToast(msg, success=true) {
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-// Write to Google Sheet via Apps Script (no-cors)
 async function writeToSheet(payload) {
   if(!APPS_SCRIPT_URL) return;
+  const body = JSON.stringify({...payload, sheetName: SHEET_NAME});
   try {
-    // Use no-cors since Apps Script doesn't return CORS headers for cross-origin
-    await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({...payload, sheetName: SHEET_NAME})), {
-      method: 'GET',
-    });
-    showToast('✅ Sheet updated!');
+    const res = await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body});
+    const json = await res.json();
+    if(json.success) showToast('✅ Sheet updated!');
+    else showToast('⚠️ '+json.error, false);
   } catch(e) {
-    console.warn('Sheet write failed:', e);
-    showToast('⚠️ Saved locally, sheet update failed', false);
+    try {
+      await fetch(APPS_SCRIPT_URL + '?data=' + encodeURIComponent(body), {method:'GET', mode:'no-cors'});
+      showToast('✅ Sheet updated!');
+    } catch(e2) { showToast('⚠️ Sheet update failed', false); }
   }
 }
 
@@ -316,98 +319,105 @@ const fixCity = c => {
   if(!c) return '';
   c = c.trim();
   if(c==='رأس تنورة'||c==='راس تنورة') return 'رأس تنورة';
-  if(c==='الأحساء'||c==='الاحساء')     return 'الاحساء';
+  if(c==='الأحساء'||c==='الاحساء') return 'الاحساء';
   return c;
 };
 
-async function loadData() {
+async function loadData(forceRefresh=false) {
   document.getElementById('loadingState').style.display='block';
   document.getElementById('mainContent').style.display='none';
+
+  const CACHE_KEY = 'gownCache_v1';
+  const CACHE_TTL = 5 * 60 * 1000;
+  if(!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if(cached) {
+        const {data, ts} = JSON.parse(cached);
+        if(Date.now() - ts < CACHE_TTL) { processSheetData(data); return; }
+      }
+    } catch(e) {}
+  }
+
   try {
     const res  = await fetch(SHEET_URL);
     const text = await res.text();
     const json = JSON.parse(text.match(/setResponse\(([\s\S]*)\)/)[1]);
-    const rows = json.table.rows;
-    const cols = json.table.cols;
-
-    const map = {};
-    cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
-    const gv = (r,...names) => {
-      for(const name of names){
-        const i = map[name.toLowerCase()];
-        if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
-      }
-      return '';
-    };
-
-    ALL = [];
-    rows.forEach((r,i)=>{
-      const name = gv(r,'student name');
-      if(!name) return;
-      ALL.push({
-        idx:       i+1,
-        id:        gv(r,'sr. no','sr.no') || String(i+1),
-        srno:      gv(r,'sr. no','sr.no') || '',
-        name,
-        studentId: gv(r,'kfupm id','student id','kfupmid','studentid'),
-        size:      gv(r,'size'),
-        gender:    gv(r,'gender'),
-        college:   gv(r,'college'),
-        color:     gv(r,'color','colour'),
-        level:     gv(r,'level'),
-        mobile:    gv(r,'mobile number','mobile'),
-        city:      fixCity(gv(r,'city')),
-        honor:     gv(r,'honors','honor','honor rank'),
-        batch:     gv(r,'batch'),
-        isNew:     false,
-      });
-    });
-
-    ALL.sort((a,b)=>a.name.localeCompare(b.name));
-    ALL.forEach((s,i)=>s.idx=i+1);
-
-    renderTable(); renderBreakdown(); updateStats();
-    document.getElementById('loadingState').style.display='none';
-    document.getElementById('mainContent').style.display='block';
-
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({data:json, ts:Date.now()})); } catch(e) {}
+    processSheetData(json);
   } catch(e) {
-    document.getElementById('loadingState').innerHTML=
-      `<div style="color:#dc2626;font-weight:700;font-size:1rem;">❌ Failed to load data.<br>
-       <span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
-    console.error(e);
+    document.getElementById('loadingState').innerHTML = `<div style="color:#dc2626;font-weight:700;">❌ Failed to load data.<br><span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
   }
 }
 
-function getRowState(id) { return state[id] || {}; }
+function processSheetData(json) {
+  const rows = json.table.rows;
+  const cols = json.table.cols;
+  const map = {};
+  cols.forEach((c,i)=>{ if(c.label) map[c.label.toLowerCase().trim()]=i; });
+  const gv = (r,...names) => {
+    for(const name of names){
+      const i = map[name.toLowerCase()];
+      if(i!=null && r.c[i] && r.c[i].v!=null) return String(r.c[i].v).trim();
+    }
+    return '';
+  };
+
+  ALL = [];
+  rows.forEach((r,i)=>{
+    const name = gv(r,'student name');
+    if(!name) return;
+    const sheetStatus = gv(r,'status').toLowerCase();
+    const deliveredFromSheet = sheetStatus==='delivered' || sheetStatus==='تم التوصيل';
+    ALL.push({
+      idx:i+1, id:gv(r,'sr. no','sr.no')||String(i+1), srno:gv(r,'sr. no','sr.no')||'',
+      name, studentId:gv(r,'kfupm id','student id','kfupmid','studentid'),
+      size:gv(r,'size'), gender:gv(r,'gender'), college:gv(r,'college'),
+      color:gv(r,'color','colour'), level:gv(r,'level'),
+      mobile:gv(r,'mobile number','mobile'), city:fixCity(gv(r,'city')),
+      honor:gv(r,'honors','honor','honor rank'), batch:gv(r,'batch'),
+      deliveredFromSheet, isNew:false,
+    });
+  });
+
+  ALL.sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('mainContent').style.display='block';
+
+  if(!window._fbListening) {
+    window._fbListening = true;
+    onValue(ref(db, DB_KEY), snapshot => {
+      renderFromState(snapshot.val() || {});
+    });
+  }
+}
+
+function getRowState(id) {
+  const st = ALL.find(s=>s.id===id);
+  const fb = state[id] || {};
+  if(fb.delivered===undefined && st && st.deliveredFromSheet) return {...fb, delivered:1};
+  return fb;
+}
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
   ALL.forEach(st => {
     const rs = getRowState(st.id);
-    const delivered  = !!rs.delivered;
-    const updatedSize = rs.updatedSize || '';
+    const delivered = !!rs.delivered;
     const isNew = st.isNew || !!rs.isNew;
-    const batch = rs.batch || st.batch || '';
-
     const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
     const tr = document.createElement('tr');
-    tr.id = 'row-'+st.id;
-    tr.dataset.id    = st.id;
-    tr.dataset.batch = batch;
+    tr.id='row-'+st.id; tr.dataset.id=st.id; tr.dataset.sid=st.studentId||''; tr.dataset.batch=rs.batch||st.batch||'';
     if(delivered) tr.classList.add('done-row');
-    if(isNew)     tr.classList.add('new-row');
-
+    if(isNew) tr.classList.add('new-row');
     tr.innerHTML = `
       <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
-      <td style="font-size:.72rem;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center">${st.srno}</td>
+      <td style="text-align:center;font-size:.75rem;color:var(--muted);font-weight:700">${st.srno}</td>
       <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800"> NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
       <td><span class="size-badge">${st.size}</span></td>
-      <td style="white-space:nowrap">
-        <input class="edit-input" id="us-${st.id}" value="${updatedSize}" placeholder="New size...">
-        <button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="padding:4px 10px;border:none;border-radius:6px;background:#4f46e5;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;margin-right:2px">✓ Update</button>
-      </td>
+      <td style="white-space:nowrap"><input class="edit-input" id="us-${st.id}" value="${rs.updatedSize||''}" placeholder="New size..."><button onclick="window.pushUpdatedSize('${st.id}','${st.srno}')" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;padding:3px 8px;margin-right:2px;cursor:pointer;font-size:.72rem">✓</button></td>
       <td style="font-size:.78rem;color:var(--muted)">${st.gender||'—'}</td>
       <td class="td-college"><span class="college-dot" style="background:${fg}"></span>${st.college}</td>
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
@@ -416,18 +426,32 @@ function renderTable() {
       <td class="td-city">${st.city}</td>
       <td>${st.honor?'<span class="honor-badge">'+st.honor+'</span>':'—'}</td>
       <td><span class="${delivered?'status-delivered':'status-pending'}">${delivered?'✅ Delivered':'⏳ Not Delivered'}</span></td>
-      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${batch||'—'}</td>`;
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${rs.batch||st.batch||'—'}</td>
+      <td><textarea class="comment-input" rows="1" placeholder="Comment..." onchange="window.updateField('${st.id}','comment',this.value)">${rs.comment||''}</textarea></td>
+      <td><button onclick="window.deleteStudent('${st.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem">🗑</button></td>`;
     tbody.appendChild(tr);
   });
   applyFilters();
+}
+
+function updateStats() {
+  const total = ALL.length;
+  const done = ALL.filter(st=>getRowState(st.id).delivered).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('cTotal').textContent = total;
+  document.getElementById('cDone').textContent = done;
+  document.getElementById('cLeft').textContent = total-done;
+  document.getElementById('cPct').textContent = pct+'%';
+  document.getElementById('progChip').textContent = done+' / '+total;
+  document.getElementById('mainBar').style.width = pct+'%';
 }
 
 function renderBreakdown() {
   const countBy = key => {
     const m = {};
     ALL.forEach(st => {
-      const v = (key==='batch' ? (getRowState(st.id).batch||st.batch) : st[key]) || '—';
-      if(!m[v]) m[v] = {total:0, handed:0};
+      const v = (key==='batch'?(getRowState(st.id).batch||st.batch):st[key])||'—';
+      if(!m[v]) m[v]={total:0,handed:0};
       m[v].total++;
       if(getRowState(st.id).delivered) m[v].handed++;
     });
@@ -435,222 +459,162 @@ function renderBreakdown() {
   };
   const panel = (id, entries) => {
     document.getElementById(id).innerHTML = entries.map(([l,{total,handed}]) => `
-      <div class="bk-row">
-        <div style="flex:1">
-          <div class="bk-label">${l}</div>
-          <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div>
-        </div>
-        <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700">
-          <span style="color:#059669">${handed}</span>
-          <span style="color:var(--muted)"> / ${total}</span>
-        </div>
-      </div>`).join('');
+      <div class="bk-row"><div style="flex:1"><div class="bk-label">${l}</div><div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div></div>
+      <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700"><span style="color:#059669">${handed}</span> / ${total}</div></div>`).join('');
   };
-  panel('bkSize',    countBy('size'));
-  panel('bkCollege', countBy('college'));
-  panel('bkCity',    countBy('city'));
-  panel('bkBatch',   countBy('batch'));
-}
-
-function updateStats() {
-  const total = ALL.length;
-  const done  = ALL.filter(st=>getRowState(st.id).delivered).length;
-  const left  = total-done;
-  const pct   = total ? Math.round(done/total*100) : 0;
-  document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent  = done;
-  document.getElementById('cLeft').textContent  = left;
-  document.getElementById('cPct').textContent   = pct+'%';
-  document.getElementById('progChip').textContent = done+' / '+total;
-  document.getElementById('mainBar').style.width  = pct+'%';
+  panel('bkSize',countBy('size')); panel('bkCollege',countBy('college')); panel('bkCity',countBy('city')); panel('bkBatch',countBy('batch'));
 }
 
 function toggle(id) {
   const cb = document.getElementById('cb-'+id);
-  if(!cb) return;
-  if(!state[id]) state[id] = {};
-  state[id].delivered = cb.checked ? 1 : 0;
-  savePart(id, {delivered: cb.checked ? 1 : 0});
+  if(!state[id]) state[id]={};
+  state[id].delivered = cb.checked?1:0;
+  savePart(id, {delivered:state[id].delivered});
   const tr = document.getElementById('row-'+id);
   tr.classList.toggle('done-row', cb.checked);
-  cb.nextElementSibling.textContent = cb.checked ? '✓' : '';
-  const statusEl = tr.querySelector('.status-delivered, .status-pending');
-  if(statusEl){
-    statusEl.className = cb.checked ? 'status-delivered' : 'status-pending';
-    statusEl.textContent = cb.checked ? '✅ Delivered' : '⏳ Not Delivered';
-  }
+  cb.nextElementSibling.textContent = cb.checked?'✓':'';
+  const statusEl = tr.querySelector('.status-delivered,.status-pending');
+  if(statusEl){ statusEl.className=cb.checked?'status-delivered':'status-pending'; statusEl.textContent=cb.checked?'✅ Delivered':'⏳ Not Delivered'; }
+  const srno = ALL.find(st=>st.id===id)?.srno;
+  if(srno) writeToSheet({action:'updateStatus', srno, status:cb.checked?'Delivered':'Not Delivered'});
   updateStats(); renderBreakdown();
 }
 
-function updateField(id, field, value) {
-  if(!state[id]) state[id] = {};
-  state[id][field] = value;
-  savePart(id, {[field]: value});
+function pushUpdatedSize(id, srno) {
+  const v = document.getElementById('us-'+id)?.value.trim();
+  if(!v) return;
+  updateField(id,'updatedSize',v);
+  if(srno) writeToSheet({action:'updateSize', srno, updatedSize:v});
 }
 
-function pushUpdatedSize(id, srno) {
-  const input = document.getElementById('us-'+id);
-  if(!input) return;
-  const val = input.value.trim();
-  if(!val){ showToast('Please enter a size', false); return; }
-  updateField(id, 'updatedSize', val);
-  writeToSheet({action:'updateSize', srno, updatedSize: val});
-  input.style.borderColor = '#059669';
-  setTimeout(()=>{ if(input) input.style.borderColor=''; }, 2000);
+function updateField(id,f,v) {
+  if(!state[id]) state[id]={};
+  state[id][f]=v;
+  savePart(id,{[f]:v});
 }
 
 function applyFilters() {
-  const q   = document.getElementById('searchInput').value.toLowerCase();
-  const col = document.getElementById('filterCollege').value;
-  const sz  = document.getElementById('filterSize').value;
-  const clr = document.getElementById('filterColor').value;
-  const ct  = document.getElementById('filterCity').value;
-  const bat = document.getElementById('filterBatch').value;
-  const st  = document.getElementById('filterStatus').value;
-  let visible = 0;
-  document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
-    const college = tr.querySelector('.td-college').textContent.trim();
-    const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
-    const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
-    const city    = tr.querySelector('.td-city').textContent.trim();
-    const batch   = tr.dataset.batch||'';
-    const id      = tr.dataset.id;
-    const done    = !!getRowState(id).delivered;
-    const show =
-      (!q   || name.includes(q)) &&
-      (!col || college.includes(col)) &&
-      (!sz  || size === sz) &&
-      (!clr || color === clr) &&
-      (!ct  || city === ct) &&
-      (!bat || batch === bat) &&
-      (!st  || (st==='done' ? done : !done));
-    tr.style.display = show ? '' : 'none';
-    if(show) visible++;
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const col=document.getElementById('filterCollege').value;
+  const sz=document.getElementById('filterSize').value;
+  const clr=document.getElementById('filterColor').value;
+  const ct=document.getElementById('filterCity').value;
+  const bat=document.getElementById('filterBatch').value;
+  const st=document.getElementById('filterStatus').value;
+  let vis=0;
+  document.querySelectorAll('#tableBody tr').forEach(tr=>{
+    const name=tr.querySelector('.td-name').textContent.toLowerCase();
+    const sid=(tr.dataset.sid||'').toLowerCase();
+    const college=tr.querySelector('.td-college')?.textContent||'';
+    const size=tr.querySelector('.size-badge')?.textContent||'';
+    const color=tr.querySelector('.color-pill')?.textContent||'';
+    const city=tr.querySelector('.td-city')?.textContent||'';
+    const batch=tr.dataset.batch||'';
+    const done=!!getRowState(tr.dataset.id).delivered;
+    const show=(!q||name.includes(q)||sid.includes(q))&&(!col||college.includes(col))&&(!sz||size===sz)&&(!clr||color===clr)&&(!ct||city===ct)&&(!bat||batch===bat)&&(!st||(st==='done'?done:!done));
+    tr.style.display=show?'':'none';
+    if(show) vis++;
   });
-  document.getElementById('emptyState').style.display = visible===0 ? 'block' : 'none';
-  const isFiltered = q||col||sz||clr||ct||bat||st;
-  const counter = document.getElementById('filterCounter');
-  if(isFiltered){
-    document.getElementById('counterNum').textContent = visible;
-    counter.style.display = 'flex';
-  } else {
-    counter.style.display = 'none';
-  }
+  document.getElementById('counterNum').textContent=vis;
+  document.getElementById('filterCounter').style.display=(q||col||sz||clr||ct||bat||st)?'flex':'none';
+  document.getElementById('emptyState').style.display=vis===0?'block':'none';
 }
 
 function clearFilters() {
-  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterBatch','filterStatus']
-    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['searchInput','filterCollege','filterSize','filterColor','filterCity','filterBatch','filterStatus'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   applyFilters();
 }
 
-let _tableReady = false;
+let _firstRender = false;
 
 function renderFromState(s) {
-  state = s || {};
+  state = s||{};
 
-  // Merge new students from Firebase into ALL
-  let changed = false;
+  // Check for new students added via Firebase
+  let hasNew = false;
   Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
     if(!ALL.find(st=>st.id===id)){
-      ALL.push({
-        idx:0, id, srno:v.srno||'', name:v.name||'',
-        studentId:v.studentId||'', size:v.size||'',
-        gender:v.gender||'', college:v.college||'',
-        color:v.color||'', level:v.level||'',
-        mobile:v.mobile||'', city:v.city||'',
-        honor:v.honor||'', batch:v.batch||'',
-        isNew:true,
-      });
-      changed = true;
+      ALL.push({idx:0,id,srno:v.srno||'',name:v.name||'',studentId:v.studentId||'',size:v.size||'',gender:v.gender||'',college:v.college||'',color:v.color||'',level:v.level||'',mobile:v.mobile||'',city:v.city||'',honor:v.honor||'',batch:v.batch||'',deliveredFromSheet:false,isNew:true});
+      hasNew = true;
     }
   });
 
-  if(!_tableReady || changed) {
-    // First load or new student added — full re-render
-    if(changed){ ALL.sort((a,b)=>a.name.localeCompare(b.name)); ALL.forEach((s,i)=>s.idx=i+1); }
-    renderTable(); renderBreakdown(); updateStats();
-    _tableReady = true;
-    return;
+  if(!_firstRender || hasNew) {
+    // Full render on first load or when new student added
+    if(hasNew) ALL.sort((a,b)=>a.name.localeCompare(b.name));
+    renderTable();
+    _firstRender = true;
+  } else {
+    // Just update checkboxes and status — no full re-render
+    ALL.forEach(st => {
+      const rs = getRowState(st.id);
+      const delivered = !!rs.delivered;
+      const cb = document.getElementById('cb-'+st.id);
+      const tr = document.getElementById('row-'+st.id);
+      if(!cb || !tr) return;
+      cb.checked = delivered;
+      cb.nextElementSibling.textContent = delivered?'✓':'';
+      tr.classList.toggle('done-row', delivered);
+      const statusEl = tr.querySelector('.status-delivered,.status-pending');
+      if(statusEl){ statusEl.className=delivered?'status-delivered':'status-pending'; statusEl.textContent=delivered?'✅ Delivered':'⏳ Not Delivered'; }
+      const usInput = document.getElementById('us-'+st.id);
+      if(usInput && rs.updatedSize) usInput.value = rs.updatedSize;
+    });
   }
 
-  // Subsequent syncs — only update existing rows without re-rendering
-  ALL.forEach(st => {
-    const rs = state[st.id] || {};
-    const delivered = !!rs.delivered;
-    const tr = document.getElementById('row-'+st.id);
-    if(!tr) return;
-
-    // Update delivered state
-    const cb = document.getElementById('cb-'+st.id);
-    if(cb) { cb.checked = delivered; cb.nextElementSibling.textContent = delivered?'✓':''; }
-    tr.classList.toggle('done-row', delivered);
-    tr.dataset.batch = rs.batch || st.batch || '';
-
-    // Update status cell
-    const statusEl = tr.querySelector('.status-delivered, .status-pending');
-    if(statusEl){
-      statusEl.className = delivered ? 'status-delivered' : 'status-pending';
-      statusEl.textContent = delivered ? '✅ Delivered' : '⏳ Not Delivered';
-    }
-
-    // Update updatedSize input
-    const usInput = document.getElementById('us-'+st.id);
-    if(usInput && rs.updatedSize && usInput.value !== rs.updatedSize){
-      usInput.value = rs.updatedSize;
-    }
-  });
-
-  renderBreakdown(); updateStats();
+  updateStats(); renderBreakdown();
 }
 
 function openModal(){ document.getElementById('modalBg').classList.add('open'); }
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
 
 function saveNewStudent() {
-  const name = document.getElementById('m_name').value.trim();
-  if(!name){ showToast('Student Name is required', false); return; }
-  const id = 'new_'+Date.now();
-  const newSt = {
-    isNew:1,
-    srno:    document.getElementById('m_srno').value.trim(),
-    name,
-    studentId: document.getElementById('m_id').value.trim(),
-    size:    document.getElementById('m_size').value.trim(),
-    gender:  document.getElementById('m_gender').value.trim(),
-    college: document.getElementById('m_college').value.trim(),
-    color:   document.getElementById('m_color').value,
-    level:   document.getElementById('m_level').value.trim(),
-    mobile:  document.getElementById('m_mobile').value.trim(),
-    city:    document.getElementById('m_city').value.trim(),
-    honor:   document.getElementById('m_honor').value,
-    batch:   document.getElementById('m_batch').value,
-  };
+  const name=document.getElementById('m_name').value.trim();
+  if(!name) return showToast('Name required',false);
+  const id='new_'+Date.now();
+  const data={isNew:1,srno:document.getElementById('m_srno').value,name,studentId:document.getElementById('m_id').value,size:document.getElementById('m_size').value,gender:document.getElementById('m_gender').value,college:document.getElementById('m_college').value,color:document.getElementById('m_color').value,level:document.getElementById('m_level').value,mobile:document.getElementById('m_mobile').value,city:document.getElementById('m_city').value,honor:document.getElementById('m_honor').value,batch:document.getElementById('m_batch').value};
   if(!state[id]) state[id]={};
-  Object.assign(state[id], newSt);
-  savePart(id, newSt);
-  // Write to sheet
-  writeToSheet({action:'addStudent', ...newSt});
+  Object.assign(state[id],data);
+  savePart(id,data);
+  writeToSheet({action:'addStudent',...data});
   closeModal();
-  ['m_srno','m_name','m_id','m_size','m_gender','m_college','m_level','m_mobile','m_city']
-    .forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
-  ['m_color','m_honor','m_batch'].forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
+  ['m_srno','m_name','m_id','m_size','m_gender','m_college','m_level','m_mobile','m_city'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+  ['m_color','m_honor','m_batch'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
 }
 
-onValue(ref(db, DB_KEY), snapshot => {
-  renderFromState(snapshot.val() || {});
-});
+function deleteStudent(id) {
+  if(!confirm('Delete this student?')) return;
+  ALL = ALL.filter(st=>st.id!==id);
+  delete state[id];
+  set(ref(db,DB_KEY),state);
+  const tr=document.getElementById('row-'+id);
+  if(tr) tr.remove();
+  updateStats(); renderBreakdown();
+  showToast('🗑 Student deleted');
+}
 
-window.toggle          = toggle;
-window.applyFilters    = applyFilters;
-window.clearFilters    = clearFilters;
-window.loadData        = loadData;
-window.openModal       = openModal;
-window.closeModal      = closeModal;
-window.saveNewStudent  = saveNewStudent;
-window.updateField     = updateField;
-window.pushUpdatedSize = pushUpdatedSize;
+function exportExcel() {
+  const headers=['Sr. No','Student Name','Student ID','Size','Updated Size','Gender','College','Color','Level','Mobile Number','City','Honors','Status','Batch','Comments'];
+  const rows=ALL.map(st=>{
+    const rs=getRowState(st.id);
+    const delivered=!!rs.delivered;
+    return [st.srno,st.name,st.studentId||'',st.size,rs.updatedSize||'',st.gender||'',st.college,st.color,st.level||'',st.mobile||'',st.city,st.honor||'',delivered?'Delivered':'Not Delivered',rs.batch||st.batch||'',rs.comment||''];
+  });
+  const esc=v=>{const s=String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;};
+  const csv=[headers,...rows].map(r=>r.map(esc).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='gown-distribution-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('✅ File downloaded!');
+}
+
+window.toggle=toggle; window.applyFilters=applyFilters; window.clearFilters=clearFilters;
+window.loadData=loadData; window.openModal=openModal; window.closeModal=closeModal;
+window.saveNewStudent=saveNewStudent; window.updateField=updateField;
+window.pushUpdatedSize=pushUpdatedSize; window.deleteStudent=deleteStudent;
+window.exportExcel=exportExcel;
 
 loadData();
 </script>
