@@ -17,6 +17,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .topbar-titles{flex:1;}.topbar-titles h1{font-size:1.15rem;font-weight:800;}.topbar-titles p{font-size:.78rem;color:var(--muted);margin-top:1px;}
 .reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;color:var(--indigo);cursor:pointer;}
 .reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
+.export-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
 .loading{text-align:center;padding:80px 20px;color:var(--muted);}
 .spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -84,6 +85,7 @@ td{padding:11px 14px;vertical-align:middle;}
     <h1>Male Undergraduate Students — Gown Distribution</h1>
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
+  <button class="export-btn" onclick="window.exportExcel()">📥 Export Excel</button>
   <button class="reload-btn" onclick="loadData()">🔄 Refresh Data</button>
 </div>
 
@@ -133,21 +135,18 @@ td{padding:11px 14px;vertical-align:middle;}
       <option>KFUPM Business School</option>
       <option>Petroleum Engg. & Geo Sciences</option>
     </select>
-
     <span class="filter-label">Size:</span>
     <select onchange="applyFilters()" id="filterSize">
       <option value="">All Sizes</option>
       <option>27"</option><option>28"</option><option>29"</option><option>30"</option>
       <option>31"</option><option>32"</option><option>33"</option><option>34"</option>
     </select>
-
     <span class="filter-label">Color:</span>
     <select onchange="applyFilters()" id="filterColor">
       <option value="">All Colors</option>
       <option>Blue</option><option>Brown</option><option>Gray</option>
       <option>Orange</option><option>Red</option><option>Yellow</option>
     </select>
-
     <span class="filter-label">City:</span>
     <select onchange="applyFilters()" id="filterCity">
       <option value="">All Cities</option>
@@ -155,13 +154,11 @@ td{padding:11px 14px;vertical-align:middle;}
       <option>الخبر</option><option>الدمام</option><option>الظهران</option>
       <option>القطيف</option><option>بقيق</option><option>رأس تنورة</option><option>سيهات</option>
     </select>
-
     <span class="filter-label">Term:</span>
     <select onchange="applyFilters()" id="filterTerm">
       <option value="">All Terms</option>
       <option>202510</option><option>202520</option><option>202530</option>
     </select>
-
     <select onchange="applyFilters()" id="filterStatus">
       <option value="">All</option>
       <option value="pending">Pending only</option>
@@ -204,19 +201,15 @@ const db = getDatabase(app);
 const SHEET_ID   = "1Wf59qFScfFZktUfDMnYZXaagSiHrHwWbz6cJ2eQ_DHc";
 const SHEET_NAME = "remaining UG Male Eastern Region";
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&headers=1`;
-
 const KEY = "gownMaleChecklist_v1";
 
 let ALL = [];
 let state = {};
 
 const COLOR_STYLE = {
-  Yellow:['#fef3c7','#d97706'],
-  Gray:['#f3f4f6','#6b7280'],
-  Orange:['#fff7ed','#ea580c'],
-  Red:['#fef2f2','#dc2626'],
-  Blue:['#eff6ff','#2563eb'],
-  Brown:['#fdf6ec','#92400e'],
+  Yellow:['#fef3c7','#d97706'], Gray:['#f3f4f6','#6b7280'],
+  Orange:['#fff7ed','#ea580c'], Red:['#fef2f2','#dc2626'],
+  Blue:['#eff6ff','#2563eb'],   Brown:['#fdf6ec','#92400e'],
 };
 
 const save = (s) => set(ref(db, KEY), s || {});
@@ -232,7 +225,6 @@ const fixCity = c => {
 async function loadData() {
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('mainContent').style.display = 'none';
-
   try {
     const res = await fetch(SHEET_URL);
     const text = await res.text();
@@ -241,10 +233,7 @@ async function loadData() {
     const cols = json.table.cols;
 
     const map = {};
-    cols.forEach((c, i) => {
-      if (c.label) map[c.label.toLowerCase().trim()] = i;
-    });
-
+    cols.forEach((c, i) => { if (c.label) map[c.label.toLowerCase().trim()] = i; });
     const gv = (r, name) => {
       const i = map[name.toLowerCase()];
       return (i != null && r.c[i] && r.c[i].v != null) ? String(r.c[i].v).trim() : '';
@@ -254,27 +243,23 @@ async function loadData() {
     rows.forEach((r, i) => {
       const name = gv(r, 'student name');
       if (!name) return;
-
       ALL.push({
         idx: i + 1,
         id: gv(r, 'sr. no') || gv(r, 'sr.no') || String(i + 1),
         name,
-        size: gv(r, 'size'),
+        size:    gv(r, 'size'),
         college: gv(r, 'college'),
-        color: gv(r, 'color'),
-        mobile: gv(r, 'mobile number'),
-        city: fixCity(gv(r, 'city')),
-        term: gv(r, 'term'),
+        color:   gv(r, 'color'),
+        mobile:  gv(r, 'mobile number'),
+        city:    fixCity(gv(r, 'city')),
+        term:    gv(r, 'term'),
       });
     });
 
     ALL.sort((a, b) => a.name.localeCompare(b.name));
     ALL.forEach((s, i) => s.idx = i + 1);
 
-    renderTable();
-    renderBreakdown();
-    updateStats();
-
+    renderTable(); renderBreakdown(); updateStats();
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
   } catch (e) {
@@ -288,25 +273,14 @@ async function loadData() {
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
-
   ALL.forEach(st => {
     const done = !!state[st.id];
     const [bg, fg] = COLOR_STYLE[st.color] || ['#f9fafb', '#374151'];
-
     const tr = document.createElement('tr');
-    tr.id = 'row-' + st.id;
-    tr.dataset.id = st.id;
-    tr.dataset.term = st.term || '';
-
+    tr.id = 'row-' + st.id; tr.dataset.id = st.id; tr.dataset.term = st.term || '';
     if (done) tr.classList.add('done-row');
-
     tr.innerHTML = `
-      <td class="td-check">
-        <label class="chk">
-          <input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done ? 'checked' : ''}>
-          <span class="box">${done ? '✓' : ''}</span>
-        </label>
-      </td>
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="toggle('${st.id}')" id="cb-${st.id}" ${done?'checked':''}><span class="box">${done?'✓':''}</span></label></td>
       <td class="td-num">${st.idx}</td>
       <td class="td-name">${st.name}</td>
       <td><span class="size-badge">${st.size}</span></td>
@@ -314,12 +288,9 @@ function renderTable() {
       <td><span class="color-pill" style="background:${bg};color:${fg};border:1.5px solid ${fg}30">${st.color}</span></td>
       <td class="td-mobile">${st.mobile}</td>
       <td class="td-city">${st.city}</td>
-      <td style="font-size:.75rem;color:var(--muted)">${st.term}</td>
-    `;
-
+      <td style="font-size:.75rem;color:var(--muted)">${st.term}</td>`;
     tbody.appendChild(tr);
   });
-
   applyFilters();
 }
 
@@ -334,24 +305,19 @@ function renderBreakdown() {
     });
     return Object.entries(m).sort((a, b) => b[1].total - a[1].total);
   };
-
   const panel = (id, entries) => {
     document.getElementById(id).innerHTML = entries.map(([l, { total, handed }]) => `
       <div class="bk-row">
         <div style="flex:1">
           <div class="bk-label">${l}</div>
-          <div class="bk-bar">
-            <div class="bk-bar-fill" style="width:${total ? Math.round(handed / total * 100) : 0}%"></div>
-          </div>
+          <div class="bk-bar"><div class="bk-bar-fill" style="width:${total?Math.round(handed/total*100):0}%"></div></div>
         </div>
         <div style="text-align:right;white-space:nowrap;font-size:.75rem;font-weight:700">
           <span style="color:#059669">${handed}</span>
           <span style="color:var(--muted)"> / ${total}</span>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   };
-
   panel('bkSize', countBy('size'));
   panel('bkCollege', countBy('college'));
   panel('bkCity', countBy('city'));
@@ -362,7 +328,6 @@ function updateStats() {
   const done = ALL.filter(st => state[st.id]).length;
   const left = total - done;
   const pct = total ? Math.round((done / total) * 100) : 0;
-
   document.getElementById('cTotal').textContent = total;
   document.getElementById('cDone').textContent = done;
   document.getElementById('cLeft').textContent = left;
@@ -374,79 +339,79 @@ function updateStats() {
 function toggle(id) {
   const cb = document.getElementById('cb-' + id);
   if (!cb) return;
-
-  if (cb.checked) {
-    state[id] = 1;
-  } else {
-    delete state[id];
-  }
-
+  cb.checked ? state[id] = 1 : delete state[id];
   save(state);
 }
 
 function applyFilters() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q   = document.getElementById('searchInput').value.toLowerCase();
   const col = document.getElementById('filterCollege').value;
-  const sz = document.getElementById('filterSize').value;
+  const sz  = document.getElementById('filterSize').value;
   const clr = document.getElementById('filterColor').value;
-  const ct = document.getElementById('filterCity').value;
+  const ct  = document.getElementById('filterCity').value;
   const trm = document.getElementById('filterTerm').value;
-  const st = document.getElementById('filterStatus').value;
-
+  const st  = document.getElementById('filterStatus').value;
   let visible = 0;
-
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const name = tr.querySelector('.td-name').textContent.toLowerCase();
+    const name    = tr.querySelector('.td-name').textContent.toLowerCase();
     const college = tr.querySelector('.td-college').textContent.trim();
-    const size = tr.querySelector('.size-badge')?.textContent.trim() || '';
-    const color = tr.querySelector('.color-pill')?.textContent.trim() || '';
-    const city = tr.querySelector('.td-city').textContent.trim();
-    const term = tr.dataset.term || '';
-    const id = tr.dataset.id;
-    const done = !!state[id];
-
+    const size    = tr.querySelector('.size-badge')?.textContent.trim() || '';
+    const color   = tr.querySelector('.color-pill')?.textContent.trim() || '';
+    const city    = tr.querySelector('.td-city').textContent.trim();
+    const term    = tr.dataset.term || '';
+    const id      = tr.dataset.id;
+    const done    = !!state[id];
     const show =
-      (!q || name.includes(q)) &&
+      (!q   || name.includes(q)) &&
       (!col || college.includes(col)) &&
-      (!sz || size === sz) &&
+      (!sz  || size === sz) &&
       (!clr || color === clr) &&
-      (!ct || city === ct) &&
+      (!ct  || city === ct) &&
       (!trm || term === trm) &&
-      (!st || (st === 'done' ? done : !done));
-
+      (!st  || (st === 'done' ? done : !done));
     tr.style.display = show ? '' : 'none';
     if (show) visible++;
   });
-
   document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
 }
 
 function renderFromState(s) {
   state = s || {};
-
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const id = tr.dataset.id;
-    const cb = document.getElementById('cb-' + id);
+    const id   = tr.dataset.id;
+    const cb   = document.getElementById('cb-' + id);
     const done = !!state[id];
-
     if (cb) cb.checked = done;
     if (cb && cb.nextElementSibling) cb.nextElementSibling.textContent = done ? '✓' : '';
-
     tr.classList.toggle('done-row', done);
   });
+  updateStats(); renderBreakdown(); applyFilters();
+}
 
-  updateStats();
-  renderBreakdown();
-  applyFilters();
+function exportExcel() {
+  const headers = ['#','Student Name','Size','College','Color','Mobile','City','Term','Status'];
+  const rows = ALL.map(st => {
+    const done = !!state[st.id];
+    return [st.idx, st.name, st.size, st.college, st.color, st.mobile, st.city, st.term, done?'Handed':'Pending'];
+  });
+  const esc = v => { const s=String(v||''); return (s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s; };
+  const csv = [headers,...rows].map(r=>r.map(esc).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gown-distribution-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 onValue(ref(db, KEY), (snapshot) => {
   renderFromState(snapshot.val() || {});
 });
 
-window.toggle = toggle;
+window.toggle       = toggle;
 window.applyFilters = applyFilters;
-window.loadData = loadData;
+window.loadData     = loadData;
+window.exportExcel  = exportExcel;
 
 loadData();
 </script>
