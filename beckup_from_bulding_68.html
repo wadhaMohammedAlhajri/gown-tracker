@@ -15,6 +15,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .reload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;font-size:.8rem;font-weight:700;color:var(--indigo);cursor:pointer;}
 .reload-btn:hover{background:#eff6ff;border-color:#4f46e5;}
 .add-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#06b6d4);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
+.export-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;}
 .loading{text-align:center;padding:80px 20px;color:var(--muted);}
 .spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:#4f46e5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -149,7 +150,8 @@ td{padding:8px 14px;vertical-align:middle;}
     <p>KFUPM Graduation Ceremony · Sorted Alphabetically</p>
   </div>
   <button class="add-btn" onclick="window.openModal()">➕ Add Student</button>
-<button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
+  <button class="export-btn" onclick="window.exportExcel()">📥 Export Excel</button>
+  <button class="reload-btn" onclick="loadData(true)">🔄 Refresh</button>
 </div>
 
 <div id="loadingState" class="loading">
@@ -412,7 +414,7 @@ function renderTable() {
     if(delivered) tr.classList.add('done-row');
     if(isNew) tr.classList.add('new-row');
     tr.innerHTML = `
-      <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''}><span class="box">${delivered?'✓':''}</span></label></td>
+      <td class="td-check"><label class="chk"><input type="checkbox" onchange="window.toggle('${st.id}')" id="cb-${st.id}" ${delivered?'checked':''} ><span class="box">${delivered?'✓':''}</span></label></td>
       <td style="text-align:center;font-size:.75rem;color:var(--muted);font-weight:700">${st.srno}</td>
       <td class="td-name">${st.name}${isNew?'<span style="margin-right:6px;background:#dcfce7;color:#059669;font-size:.65rem;padding:1px 6px;border-radius:999px;font-weight:800"> NEW</span>':''}</td>
       <td style="font-size:.75rem;color:var(--muted)">${st.studentId||'—'}</td>
@@ -529,8 +531,6 @@ let _firstRender = false;
 
 function renderFromState(s) {
   state = s||{};
-
-  // Check for new students added via Firebase
   let hasNew = false;
   Object.entries(state).filter(([id,v])=>v.isNew).forEach(([id,v])=>{
     if(!ALL.find(st=>st.id===id)){
@@ -538,14 +538,11 @@ function renderFromState(s) {
       hasNew = true;
     }
   });
-
   if(!_firstRender || hasNew) {
-    // Full render on first load or when new student added
     if(hasNew) ALL.sort((a,b)=>a.name.localeCompare(b.name));
     renderTable();
     _firstRender = true;
   } else {
-    // Just update checkboxes and status — no full re-render
     ALL.forEach(st => {
       const rs = getRowState(st.id);
       const delivered = !!rs.delivered;
@@ -561,7 +558,6 @@ function renderFromState(s) {
       if(usInput && rs.updatedSize) usInput.value = rs.updatedSize;
     });
   }
-
   updateStats(); renderBreakdown();
 }
 
@@ -600,7 +596,7 @@ function exportExcel() {
     const delivered=!!rs.delivered;
     return [st.srno,st.name,st.studentId||'',st.size,rs.updatedSize||'',st.gender||'',st.college,st.color,st.level||'',st.mobile||'',st.city,st.honor||'',delivered?'Delivered':'Not Delivered',rs.batch||st.batch||'',rs.comment||''];
   });
-  const esc=v=>{const s=String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;};
+  const esc=v=>{const s=String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+ s.replace(/"/g,'""')+'"':s;};
   const csv=[headers,...rows].map(r=>r.map(esc).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
