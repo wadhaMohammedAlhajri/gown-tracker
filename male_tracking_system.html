@@ -276,15 +276,25 @@ async function loadData() {
   }
 }
 
+function isDelivered(id) {
+  const s = state[id];
+  if(!s) return false;
+  if(typeof s === 'number') return s === 1;       // old format: state[id] = 1
+  if(typeof s === 'object') return !!s.delivered; // new format: state[id].delivered = 1
+  return false;
+}
+
 function getUpdatedSize(id) {
-  return (state[id] && state[id].updatedSize) ? state[id].updatedSize : '';
+  const s = state[id];
+  if(!s || typeof s !== 'object') return '';
+  return s.updatedSize || '';
 }
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
   ALL.forEach(st => {
-    const done = !!(state[st.id] && state[st.id].delivered);
+    const done = isDelivered(st.id);
     const updatedSize = getUpdatedSize(st.id);
     const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
     const tr = document.createElement('tr');
@@ -344,7 +354,7 @@ function renderBreakdown() {
 
 function updateStats() {
   const total = ALL.length;
-  const done  = ALL.filter(st=>state[st.id]&&state[st.id].delivered).length;
+  const done  = ALL.filter(st=>isDelivered(st.id)).length;
   const left  = total-done;
   const pct   = total ? Math.round(done/total*100) : 0;
   document.getElementById('cTotal').textContent = total;
@@ -397,7 +407,7 @@ function applyFilters() {
     const city    = tr.querySelector('.td-city').textContent.trim();
     const term    = tr.dataset.term||'';
     const id      = tr.dataset.id;
-    const done    = !!(state[id]&&state[id].delivered);
+    const done    = isDelivered(id);
     const show =
       (!q   || name.includes(q) || sid.includes(q)) &&
       (!col || college.includes(col)) &&
@@ -429,7 +439,7 @@ function clearFilters() {
 function exportExcel() {
   const headers = ['Sr. No','Student Name','Student ID','Size','Updated Size','College','Color','Mobile','City','Term','Status'];
   const rows = ALL.map(st => {
-    const done = !!(state[st.id]&&state[st.id].delivered);
+    const done = !!(isDelivered(st.id));
     const updatedSize = getUpdatedSize(st.id);
     return [st.srno, st.name, st.studentId||'', st.size, updatedSize, st.college, st.color, st.mobile, st.city, st.term, done?'Handed':'Pending'];
   });
@@ -451,7 +461,7 @@ function renderFromState(s) {
     renderTable(); _firstRender = true;
   } else {
     ALL.forEach(st => {
-      const done = !!(state[st.id]&&state[st.id].delivered);
+      const done = !!(isDelivered(st.id));
       const cb = document.getElementById('cb-'+st.id);
       const tr = document.getElementById('row-'+st.id);
       if(!cb||!tr) return;
@@ -459,7 +469,7 @@ function renderFromState(s) {
       cb.nextElementSibling.textContent = done?'✓':'';
       tr.classList.toggle('done-row', done);
       const usInput = document.getElementById('us-'+st.id);
-      if(usInput && state[st.id]?.updatedSize) usInput.value = state[st.id].updatedSize;
+      if(usInput && getUpdatedSize(st.id)) usInput.value = state[st.id].updatedSize;
     });
   }
   updateStats(); renderBreakdown();
