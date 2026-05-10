@@ -330,7 +330,7 @@ function renderBreakdown() {
       const v = st[key]||'—';
       if(!m[v]) m[v] = {total:0, handed:0};
       m[v].total++;
-      if(state[st.id] && state[st.id].delivered) m[v].handed++;
+      if(isDelivered(st.id)) m[v].handed++;
     });
     return Object.entries(m).sort((a,b)=>b[1].total-a[1].total);
   };
