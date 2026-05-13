@@ -362,6 +362,14 @@ async function loadData() {
     document.getElementById('loadingState').style.display='none';
     document.getElementById('mainContent').style.display='block';
 
+    // Start Firebase listener only after sheet data is ready
+    if(!window._fbListening) {
+      window._fbListening = true;
+      onValue(ref(db, DB_KEY), snapshot => {
+        renderFromState(snapshot.val() || {});
+      });
+    }
+
   } catch(e) {
     document.getElementById('loadingState').innerHTML=
       `<div style="color:#dc2626;font-weight:700;font-size:1rem;">❌ Failed to load data.<br>
@@ -380,11 +388,14 @@ function renderTable() {
     const [bg,fg] = COLOR_STYLE[st.color] || ['#f9fafb','#374151'];
     const tr = document.createElement('tr');
     tr.id = 'row-'+st.id;
-    tr.dataset.id    = st.id;
-    tr.dataset.sid   = st.studentId||'';
-    tr.dataset.term  = st.term||'';
-    tr.dataset.level = st.level||'';
-    tr.dataset.batch = batch;
+    tr.dataset.id      = st.id;
+    tr.dataset.sid     = st.studentId||'';
+    tr.dataset.term    = st.term||'';
+    tr.dataset.level   = st.level||'';
+    tr.dataset.batch   = batch;
+    tr.dataset.college = st.college||'';
+    tr.dataset.color   = st.color||'';
+    tr.dataset.size    = st.size||'';
     if(done) tr.classList.add('done-row');
     if(isNew) tr.classList.add('new-row');
     tr.innerHTML = `
@@ -470,13 +481,13 @@ function applyFilters() {
   const st  = document.getElementById('filterStatus').value;
   let visible = 0;
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const nameEl  = tr.querySelector('.td-name');
+    const nameEl = tr.querySelector('.td-name');
     if(!nameEl) return;
     const name    = nameEl.textContent.toLowerCase();
     const sid     = (tr.dataset.sid||'').toLowerCase();
-    const college = tr.querySelector('.td-college')?.textContent||'';
-    const size    = tr.querySelector('.size-badge')?.textContent.trim()||'';
-    const color   = tr.querySelector('.color-pill')?.textContent.trim()||'';
+    const college = (tr.dataset.college||'').toLowerCase();
+    const size    = tr.dataset.size||'';
+    const color   = tr.dataset.color||'';
     const term    = tr.dataset.term||'';
     const level   = tr.dataset.level||'';
     const batch   = tr.dataset.batch||'';
@@ -484,9 +495,9 @@ function applyFilters() {
     const done    = isDelivered(id);
     const show =
       (!q   || name.includes(q) || sid.includes(q)) &&
-      (!col || college.includes(col)) &&
+      (!col || college.includes(col.toLowerCase())) &&
       (!sz  || size === sz) &&
-      (!clr || color === clr) &&
+      (!clr || color.toLowerCase() === clr.toLowerCase()) &&
       (!lv  || level === lv) &&
       (!bat || batch === bat) &&
       (!trm || term === trm) &&
@@ -593,10 +604,6 @@ function renderFromState(s) {
   }
   updateStats(); renderBreakdown();
 }
-
-onValue(ref(db, DB_KEY), snapshot => {
-  renderFromState(snapshot.val() || {});
-});
 
 window.toggle         = toggle;
 window.applyFilters   = applyFilters;
