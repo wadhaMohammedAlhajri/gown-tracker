@@ -114,7 +114,7 @@ td{padding:11px 14px;vertical-align:middle;}
       <div><label>Level</label><input id="m_level" placeholder="UG / PG"></div>
       <div><label>Batch</label>
         <select id="m_batch"><option value="">—</option>
-          <option>pickup from 68</option>
+          <option>Pick up from 68</option>
           <option>Return Floward</option>
         </select>
       </div>
@@ -197,7 +197,7 @@ td{padding:11px 14px;vertical-align:middle;}
   <span class="filter-label">Batch:</span>
   <select onchange="applyFilters()" id="filterBatch">
     <option value="">All Batches</option>
-    <option>pickup from 68</option>
+    <option>Pick up from 68</option>
     <option>Return Floward</option>
   </select>
   <span class="filter-label">Term:</span>
@@ -358,16 +358,20 @@ async function loadData() {
     ALL.sort((a,b)=>a.name.localeCompare(b.name));
     ALL.forEach((s,i)=>s.idx=i+1);
 
-    renderTable(); renderBreakdown(); updateStats();
     document.getElementById('loadingState').style.display='none';
     document.getElementById('mainContent').style.display='block';
 
     // Start Firebase listener only after sheet data is ready
+    // Firebase will call renderFromState which calls renderTable with correct state
     if(!window._fbListening) {
       window._fbListening = true;
       onValue(ref(db, DB_KEY), snapshot => {
         renderFromState(snapshot.val() || {});
       });
+    } else {
+      // Already listening — force re-render with current state
+      _firstRender = false;
+      renderFromState(state);
     }
 
   } catch(e) {
@@ -468,6 +472,8 @@ function toggle(id) {
   tr.classList.toggle('done-row', cb.checked);
   cb.nextElementSibling.textContent = cb.checked?'✓':'';
   updateStats(); renderBreakdown();
+  // Re-apply filters so row stays visible when filter is active
+  applyFilters();
 }
 
 function applyFilters() {
