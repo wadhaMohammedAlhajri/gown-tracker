@@ -4,96 +4,120 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KFUPM Graduation — Ticket Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f7f5;--white:#fff;--border:#d6e0d8;--text:#1a2e20;--muted:#5a7560;
-  --primary:#155744;--primary2:#009761;--beige:#E5E0C7;
-  --green:#2AA800;--red:#DE3535;--amber:#F2C93B;--gold:#F2C93B;
-  --s1:0 2px 16px rgba(21,87,68,.08);
+  --bg:#f5f0e8;--white:#fdfaf5;--border:#ddd5c0;--text:#1a1610;--muted:#7a6e5e;
+  --dark:#1a1610;--dark2:#2e2720;--beige:#e8dfc8;--beige2:#d4c9ae;
+  --gold:#c8a84b;--gold2:#a8892e;
+  --green:#2d6a3f;--red:#8b2020;
+  --s1:0 2px 16px rgba(26,22,16,.08);--s2:0 8px 32px rgba(26,22,16,.14);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Syne','Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
-  background-image:radial-gradient(circle at 10% 5%,rgba(21,87,68,.06) 0%,transparent 45%),
-    radial-gradient(circle at 90% 90%,rgba(0,151,97,.04) 0%,transparent 45%);}
-.topbar{background:var(--primary);border-bottom:1.5px solid rgba(0,0,0,.1);padding:16px 28px;
-  display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(21,87,68,.2);}
-.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#F2C93B,#f5d76e);
-  display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+  background-image:radial-gradient(circle at 10% 5%,rgba(200,168,75,.08) 0%,transparent 45%),
+    radial-gradient(circle at 90% 90%,rgba(26,22,16,.04) 0%,transparent 45%);}
+
+.topbar{background:var(--dark);border-bottom:1.5px solid var(--dark2);padding:16px 28px;
+  display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 20px rgba(0,0,0,.3);}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
 .topbar-titles{flex:1;}
-.topbar-titles h1{font-size:1.05rem;font-weight:800;color:#fff;font-family:'Syne',sans-serif;}
-.topbar-titles p{font-size:.74rem;color:rgba(255,255,255,.7);margin-top:2px;}
-.reload-btn{padding:8px 16px;border:1.5px solid rgba(255,255,255,.3);border-radius:10px;background:rgba(255,255,255,.15);
-  font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;}
-.reload-btn:hover{background:rgba(255,255,255,.25);}
-.export-btn{padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#F2C93B,#f5d76e);
-  color:#1a2e20;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;}
-.export-btn:hover{opacity:.9;}
+.topbar-titles h1{font-size:1.1rem;font-weight:800;color:#fff;}
+.topbar-titles p{font-size:.74rem;color:rgba(255,255,255,.5);margin-top:2px;}
+.reload-btn{padding:8px 16px;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;
+  background:rgba(255,255,255,.08);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.8rem;font-weight:700;color:rgba(255,255,255,.8);cursor:pointer;transition:all .2s;}
+.reload-btn:hover{background:rgba(255,255,255,.15);}
+.export-btn{padding:8px 16px;border:1.5px solid var(--gold);border-radius:10px;
+  background:var(--gold);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.8rem;font-weight:700;color:var(--dark);cursor:pointer;transition:all .2s;}
+.export-btn:hover{background:var(--gold2);border-color:var(--gold2);color:#fff;}
+
 .loading{text-align:center;padding:100px 20px;color:var(--muted);}
-.spinner{width:40px;height:40px;border:4px solid #e8ebff;border-top-color:var(--primary);
+.spinner{width:40px;height:40px;border:4px solid var(--beige);border-top-color:var(--dark);
   border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
 .stats{display:flex;gap:14px;flex-wrap:wrap;padding:24px 28px 0;}
 .stat{background:var(--white);border-radius:16px;border:1.5px solid var(--border);
-  padding:18px 22px;flex:1;min-width:120px;box-shadow:var(--s1);text-align:center;}
+  padding:18px 22px;flex:1;min-width:120px;box-shadow:var(--s1);text-align:center;
+  transition:transform .2s,box-shadow .2s;}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--s2);}
 .stat-num{font-size:2.2rem;font-weight:900;line-height:1;}
-.stat-lbl{font-size:.68rem;color:var(--muted);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
-.s-total .stat-num{color:var(--primary);}.s-done .stat-num{color:var(--primary2);}
-.s-left .stat-num{color:#dc2626;}.s-pct .stat-num{color:#d97706;}
+.stat-lbl{font-size:.68rem;color:var(--muted);margin-top:5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;}
+.s-total .stat-num{color:var(--dark);}
+.s-done .stat-num{color:var(--green);}
+.s-left .stat-num{color:var(--red);}
+.s-pct .stat-num{color:var(--gold2);}
+
 .prog-wrap{margin:18px 28px 0;background:var(--white);border-radius:16px;
   padding:18px 22px;border:1.5px solid var(--border);box-shadow:var(--s1);}
 .prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .prog-head span{font-size:.82rem;font-weight:700;color:var(--muted);}
-.prog-chip{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+.prog-chip{background:var(--dark);color:#fff;
   padding:3px 14px;border-radius:999px;font-weight:800;font-size:.82rem;}
-.bar-bg{background:#e8ebff;border-radius:999px;height:12px;overflow:hidden;}
+.bar-bg{background:var(--beige);border-radius:999px;height:12px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:999px;width:0%;
-  background:linear-gradient(90deg,var(--primary),var(--primary2));
+  background:linear-gradient(90deg,var(--dark2),var(--dark));
   transition:width .8s cubic-bezier(.4,0,.2,1);}
 .target-note{font-size:.72rem;color:var(--muted);margin-top:7px;text-align:right;}
-.complete-banner{display:none;margin:14px 28px 0;background:linear-gradient(135deg,#d4edda,#c3e6cb);
-  border:1.5px solid var(--primary2);border-radius:16px;padding:14px 22px;text-align:center;}
+
+.complete-banner{display:none;margin:14px 28px 0;
+  background:linear-gradient(135deg,#f5ead0,#ead5a0);
+  border:1.5px solid var(--gold);border-radius:16px;padding:14px 22px;text-align:center;}
 .complete-banner.show{display:block;}
-.complete-banner span{font-size:1rem;font-weight:800;color:var(--primary);}
+.complete-banner span{font-size:1rem;font-weight:800;color:var(--dark);}
+
 .filters{display:flex;gap:10px;flex-wrap:wrap;padding:18px 28px 0;align-items:center;}
 .search-wrap{position:relative;flex:1;min-width:220px;max-width:360px;}
-.search-wrap input{width:100%;padding:10px 14px 10px 40px;border:1.5px solid var(--border);border-radius:10px;
-  background:var(--white);font-size:.85rem;color:var(--text);outline:none;}
+.search-wrap input{width:100%;padding:10px 14px 10px 40px;border:1.5px solid var(--border);
+  border-radius:10px;background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.85rem;color:var(--text);outline:none;transition:border .2s;}
 .search-wrap input::placeholder{color:var(--muted);}
-.search-wrap input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(21,87,68,.1);}
+.search-wrap input:focus{border-color:var(--dark);box-shadow:0 0 0 3px rgba(26,22,16,.08);}
 .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);}
 .filter-select{padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;
-  background:var(--white);font-size:.82rem;color:var(--text);outline:none;cursor:pointer;}
-.filter-select:focus{border-color:var(--primary);}
+  background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.82rem;color:var(--text);outline:none;cursor:pointer;}
+.filter-select:focus{border-color:var(--dark);}
+
 .filter-counter{padding:8px 28px;display:none;align-items:center;gap:10px;}
-.chip2{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+.chip2{background:var(--dark);color:#fff;
   padding:5px 16px;border-radius:999px;font-size:.78rem;font-weight:700;}
 .clear-btn{padding:5px 14px;border:1.5px solid var(--border);border-radius:999px;
-  background:#fff;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;}
-.clear-btn:hover{border-color:var(--primary);color:var(--primary);}
+  background:var(--white);font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;}
+.clear-btn:hover{border-color:var(--dark);color:var(--dark);}
+
 .table-wrap{margin:16px 28px 48px;background:var(--white);border-radius:20px;
   border:1.5px solid var(--border);box-shadow:var(--s1);overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:.85rem;}
-thead th{background:#f8f9ff;padding:12px 16px;text-align:left;font-weight:800;
-  font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
+thead th{background:var(--beige);padding:12px 16px;text-align:left;font-weight:800;
+  font-size:.7rem;color:var(--dark);text-transform:uppercase;letter-spacing:.5px;
   border-bottom:1.5px solid var(--border);white-space:nowrap;}
-tbody tr{border-bottom:1px solid #f0f4ff;transition:background .15s;}
+tbody tr{border-bottom:1px solid #ede5d5;transition:background .15s;}
 tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:#fafbff;}
+tbody tr:hover{background:#faf6ee;}
 tbody tr.done-row{opacity:.4;}
 tbody tr.done-row .td-name{text-decoration:line-through;color:var(--muted);}
 td{padding:12px 16px;vertical-align:middle;}
 .td-name{font-weight:700;white-space:nowrap;}
 .td-id{font-size:.78rem;color:var(--muted);font-family:monospace;}
+
 .chk{position:relative;display:inline-flex;cursor:pointer;}
 .chk input{position:absolute;opacity:0;width:0;height:0;}
-.box{width:22px;height:22px;border:2px solid #a8c4b0;border-radius:7px;background:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;font-weight:900;transition:all .2s;}
-.chk input:checked+.box{background:linear-gradient(135deg,var(--primary),var(--primary2));
-  border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(21,87,68,.3);}
-.status-handed{color:var(--primary2);font-weight:700;font-size:.75rem;}
-.status-pending{color:#94a3b8;font-size:.75rem;}
+.box{width:22px;height:22px;border:2px solid var(--border);border-radius:7px;background:var(--white);
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+  color:transparent;font-weight:900;transition:all .2s;}
+.chk input:checked+.box{background:var(--dark);border-color:var(--dark);
+  color:#fff;box-shadow:0 2px 8px rgba(26,22,16,.25);}
+
+.status-handed{color:var(--green);font-weight:700;font-size:.75rem;}
+.status-pending{color:#b0a090;font-size:.75rem;}
 .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+
 @media(max-width:768px){
   .topbar,.stats,.filters,.prog-wrap,.table-wrap,.filter-counter,.complete-banner
     {padding-left:14px;padding-right:14px;margin-left:0;margin-right:0;}
@@ -194,9 +218,7 @@ const TARGET = 1000;
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
-
 let ALL = [], state = {}, _firstRender = false;
-
 const savePart = (id, data) => update(ref(db, `${DB_KEY}/${id}`), data);
 
 function isHandled(id) {
@@ -218,7 +240,6 @@ async function loadData() {
     const json = JSON.parse(m[1]);
     const rows = json.table.rows;
     const cols = json.table.cols;
-
     const map = {};
     cols.forEach((c,i) => { if(c.label) map[c.label.toLowerCase().trim()] = i; });
     const gv = (r, ...names) => {
@@ -228,7 +249,6 @@ async function loadData() {
       }
       return '';
     };
-
     ALL = [];
     rows.forEach((r, i) => {
       const name = gv(r, 'student name');
@@ -240,11 +260,9 @@ async function loadData() {
         studentId: gv(r, 'kfupm id', 'student id', 'kfupmid', 'studentid'),
       });
     });
-
     ALL.sort((a, b) => a.name.localeCompare(b.name));
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display  = 'block';
-
     if(!window._fbListening) {
       window._fbListening = true;
       onValue(ref(db, DB_KEY), snapshot => { renderFromState(snapshot.val() || {}); });
@@ -254,8 +272,8 @@ async function loadData() {
     }
   } catch(e) {
     document.getElementById('loadingState').innerHTML =
-      `<div style="color:#dc2626;font-weight:700;font-size:1rem;">❌ Failed to load.<br>
-       <span style="font-size:.82rem;color:#64748b">${e.message}</span></div>`;
+      `<div style="color:#8b2020;font-weight:700;font-size:1rem;">❌ Failed to load.<br>
+       <span style="font-size:.82rem;color:#7a6e5e">${e.message}</span></div>`;
     console.error(e);
   }
 }
@@ -354,30 +372,31 @@ function exportExcel() {
   const handed  = ALL.filter(st => isHandled(st.id));
   const pending = ALL.filter(st => !isHandled(st.id));
   const esc = v => { const s=String(v||''); return (s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s; };
-  const headers = ['#','Student Name','Student ID','Status'];
 
   let csv = '';
-  // Summary
-  csv += 'SUMMARY\n';
-  csv += 'Total Students,' + ALL.length + '\n';
-  csv += 'Tickets Handed,' + handed.length + '\n';
-  csv += 'Remaining,' + Math.max(TARGET - handed.length, 0) + '\n';
-  csv += 'Progress,' + Math.min(Math.round((handed.length/TARGET)*100),100) + '%\n';
-  csv += 'Target,' + TARGET + '\n\n';
 
-  // Handed section
-  csv += '--- TICKETS HANDED (' + handed.length + ') ---\n';
-  csv += headers.map(esc).join(',') + '\n';
+  // ── SUMMARY ──
+  csv += 'REPORT DATE,' + new Date().toLocaleDateString() + '\n';
+  csv += 'REPORT TIME,' + new Date().toLocaleTimeString() + '\n\n';
+  csv += 'METRIC,VALUE,PERCENTAGE\n';
+  csv += 'Total Students,' + ALL.length + ',100%\n';
+  csv += 'Tickets Handed,' + handed.length + ',' + Math.min(Math.round((handed.length/TARGET)*100),100) + '%\n';
+  csv += 'Remaining,' + Math.max(TARGET - handed.length, 0) + ',' + Math.max(100-Math.round((handed.length/TARGET)*100),0) + '%\n';
+  csv += 'Target,' + TARGET + ',\n\n';
+
+  // ── HANDED ──
+  csv += 'TICKETS HANDED - ' + handed.length + ' students\n';
+  csv += '#,Student Name,Student ID,Status,Section\n';
   handed.forEach((st, i) => {
-    csv += [i+1, st.name, st.studentId||'', 'Ticket Received'].map(esc).join(',') + '\n';
+    csv += [i+1, st.name, st.studentId||'', 'Received', 'HANDED'].map(esc).join(',') + '\n';
   });
   csv += '\n';
 
-  // Pending section
-  csv += '--- PENDING (' + pending.length + ') ---\n';
-  csv += headers.map(esc).join(',') + '\n';
+  // ── PENDING ──
+  csv += 'PENDING - ' + pending.length + ' students\n';
+  csv += '#,Student Name,Student ID,Status,Section\n';
   pending.forEach((st, i) => {
-    csv += [i+1, st.name, st.studentId||'', 'Pending'].map(esc).join(',') + '\n';
+    csv += [i+1, st.name, st.studentId||'', 'Not Yet', 'PENDING'].map(esc).join(',') + '\n';
   });
 
   const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
